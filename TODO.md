@@ -1,7 +1,7 @@
 - [x] **1. Set up the development environment (Node.js, Supabase)**
     - [x] 1.1. Install Dependencies: Check for and install Node.js and npm (or a similar package manager).
     - [x] 1.2. Initialize Next.js Project: Set up a new Next.js application, which will serve as both our frontend and backend.
-    - [x] 1.3. Set up Supabase: Create a new project in Supabase to manage the PostgreSQL database and authentication.
+    - [] 1.3. Initalize NextAuth, Prisma and MySQL.
     - [x] 1.4. Environment Configuration: Securely store and configure the Next.js application with the necessary credentials to connect to your Supabase project.
 - [ ] **2. Implement the database schema based on the ERD**
     - [ ] 2.1. Analyze Database Design: Review the documents in `DOCS/DB_Design` to understand the data models and relationships.
