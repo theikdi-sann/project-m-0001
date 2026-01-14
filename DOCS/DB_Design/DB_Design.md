@@ -1,489 +1,287 @@
-# AUTHENTICATION
+# Database Design
 
-user {
-    id      : VARCHAR(25)
-    username: VARCHAR(50) UNIQUE
-    password: VARCHAR(50)
-    fullname: VARCHAR(100)
-    email   : VARCHAR(100) UNIQUE
-    phone   : VARCHAR(15)
-    role    : Role (DEFAULT Waiter)
-    isActive: BOOLEAN (DEFAULT TRUE)
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,    
-}
+This document outlines the database schema for the Restaurant Management System. The schema is optimized for MySQL/MariaDB and managed via Prisma.
 
-user_session {
-    id            : VARCHAR(25)
-    user_id       : VARCHAR(50)
-    session_token : VARCHAR(255)
-    ip_address    : INET
-    user_agent    : VARCHAR(255)
-    expires_at    : TIMESTAMP
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-}
+## 1. ENUM Definitions
 
-role {
-    id:        : VARCHAR(25)
-    name       : VARCHAR(30)       
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-}
+### `UserRole`
+- `ADMIN`
+- `MANAGER`
+- `WAITER`
+- `KITCHEN`
+- `FRONT_DESK`
+- `STAFF`
+- `CUSTOMER`
 
-permission {
-    id: 
-    role_id: 
-    name: VARCHAR(25)
-    can_create : bool
-    can_read : bool
-    can_update : bool
-    can_delete : bool
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-}
+### `TableStatus`
+- `AVAILABLE`
+- `OCCUPIED`
+- `RESERVED`
+- `MAINTENANCE`
 
-# ADMINISTRATION
+### `DiningSessionStatus`
+- `ACTIVE`
+- `BILL_REQUESTED`
+- `AWAITING_PAYMENT`
+- `COMPLETED`
+- `CANCELLED`
 
-# MENU MANAGEMENT
+<!-- [X]
+### `PricingModelType`
+- `INCLUDED`
+- `EXTRA_CHARGE` -->
 
-menu_category {
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(50) NOT NULL,
-    description TEXT,
-    status : ENUM('active', 'inactive'),
-    
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-}
+<!-- [X] -->
+### `OrderStatus`
+- `PENDING`
+- `PREPARING`
+- `READY`
+- `SERVED`
+- `CANCELLED`
 
-menu_item {
-    id : VARCHAR(25),
-    name : VARCHAR(255) NOT NULL,
-    description : VARCHAR(255),
-    category_id : menu_categories(id),
-    
-    -- Operational
-    preparation_time INT, -- in minutes
-    status VARCHAR(10) DEFAULT 'available' CHECK (status IN ('available', 'unavailable')),
-    ingredients TEXT,
-    chef_notes TEXT,
-    image_url VARCHAR(255),
+<!-- [X] -->
+### `OrderItemStatus`
+- `QUEUED`
+- `COOKING`
+- `READY`
+- `SERVED`
+- `CANCELLED`
 
-    
-    -- Options
-    option
-    
-    -- Timestamps
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Indexes
-    INDEX idx_menu_items_category (category_id),
-    INDEX idx_menu_items_status (status),
-    INDEX idx_menu_items_buffet (available_for_buffet)
-}
+<!-- [X] -->
+### `InvoiceStatus`
+- `UNPAID`
+- `PARTIALLY_PAID`
+- `PAID`
+- `VOID`
+- `REFUNDED`
 
-options {
-    id: 
-    name: 
-    
-}
+<!-- [X] -->
+### `AdjustmentCategory`
+- `TAX`
+- `SERVICE_CHARGE`
+- `DISCOUNT`
+- `OTHER`
 
-menu_item_session_details {
-    id : 
-    session_type_id : 
-    menu_item_id : 
-    price : 
-    pricing_model : ENUM ("INCLUDED", "EXTRA_CHARGE")
-}
+<!-- [X] -->
+### `AdjustmentType`
+- `FIXED`
+- `PERCENTAGE`
 
-# ORDER MANAGEMENT
+## 2. Authentication & Administration
 
-# SESSION & BILLING
+### `users`
+System users (Staff, Managers, etc.) - Integrated with NextAuth.
+- `id`: VARCHAR(25) PRIMARY KEY
+- `name`: VARCHAR(255)
+- `username`: VARCHAR(50) UNIQUE
+- `email`: VARCHAR(100) UNIQUE
+- `emailVerified`: TIMESTAMP
+- `image`: VARCHAR(255)
+- `role`: UserRole (ENUM, Default: STAFF)
+- `is_active` : BOOLEAN DEFAULT TRUE
+- `createdAt`: TIMESTAMP
+- `updatedAt`: TIMESTAMP
 
-session (
-    id : VARCHAR(25)
-    token: VARCHAR(255) UNIQUE
-    table_id : Table(id),
-    session_type : SessionTypes(id)
-    
-    customer_count : INTEGER,
-    
-    -- Timing
-    start_time:  TIMESTAMP NOT NULL,
-    end_time : TIMESTAMP,
-    expires_at : TIMESTAMP,
-    
-    -- Status
-    status : ENUM('active', 'bill_requested', "awaiting_payment", 'ended', 'paid', 'cancelled'),
-    
-    -- Staff assignment
-    created_by UUID NOT NULL REFERENCES users(id),
-    
-    -- Customer information
-    customer_notes TEXT,
-    
-    -- Timestamps
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Indexes
-    INDEX idx_sessions_table (table_id),
-    INDEX idx_sessions_status (status),
-    INDEX idx_sessions_type (session_type),
-    INDEX idx_sessions_timing (start_time, end_time),
-);
+### `permissions`
+Granular access control linked to roles.
+- `id`: VARCHAR(25) PRIMARY KEY
+- `role`: UserRole (ENUM) - The role this permission applies to.
+- `resource`: VARCHAR(50) - e.g., 'ORDER', 'MENU', 'INVOICE', 'USER'.
+- `action`: VARCHAR(20) - e.g., 'CREATE', 'READ', 'UPDATE', 'DELETE', 'MANAGE', 'EXPORT'.
+- `description`: TEXT
 
-session_type {
-    id           : VARCHAR(25)
-    name         : VARCHAR(255)
-    display_name : VARCAHR(255)
-}
+## 3. Session Management
 
-payment {
-    id                : VARCHAR(25),
-    invoice_id        : Invoices(id),
-    payment_method_id : payment_method(id),
-    amount            : DECIMAL,
-    transaction_id    : VARCHAR(100),
-    status            : ENUM('pending', 'completed', 'failed', 'refunded'),
-}
+### `tables`
+Physical dining tables in the restaurant.
+- `id`: VARCHAR(25) PRIMARY KEY
+- `table_number`: INT UNIQUE
+- `capacity`: INT
+- `location_description`: VARCHAR(100)
+- `status`: TableStatus (ENUM)
 
-payment_method {
-    id   : VARCHAR(25)
-    name : VARCHAR(50)
-}
+### `dining_session_types`
+Types of dining experiences (e.g., Buffet, À la carte).
+- `id`: VARCHAR(25) PRIMARY KEY
+- `name`: VARCHAR(100) UNIQUE
+- `display_name`: VARCHAR(255)
+- `fixed_price`: DECIMAL(10,2) (Used for buffet entry fees)
 
+### `dining_sessions`
+Active dining sessions linked to a table.
+- `id`: VARCHAR(25) PRIMARY KEY
+- `token`: VARCHAR(255) UNIQUE (For QR access)
+- `table_id`: VARCHAR(25) (FK to tables)
+- `dining_session_type_id`: VARCHAR(25) (FK to dining_session_types)
+- `customer_count`: INT
+- `start_time`: TIMESTAMP
+- `end_time`: TIMESTAMP
+- `expires_at`: TIMESTAMP
+- `status`: DiningSessionStatus (ENUM)
+- `created_by`: VARCHAR(25) (FK to users)
+- `ended_by`: VARCHAR(25) (FK to users)
+- `customer_notes`: TEXT
+- `price_list_id`: VARCHAR(25) (FK to price_list)
 
-# MYSQL
+### `price_list`
+- `id`: PRIMARY KEY
+- `name`: VARCHAR(100) UNIQUE
+- `currency`: VARCHAR(3) DEFAULT 'MMK'
+- `is_active`: BOOLEAN DEFAULT TRUE
 
--- AUTHENTICATION & ADMINISTRATION
-CREATE TABLE roles (
-    id VARCHAR(25) PRIMARY KEY,
-    name VARCHAR(30) UNIQUE NOT NULL,
-    description TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    INDEX idx_roles_name (name)
-    );
+## 4. Menu Management
 
-CREATE TABLE permissions (
-    id VARCHAR(25) PRIMARY KEY,
-    name VARCHAR(30) NOT NULL,
-    description TEXT,
-    can_create BOOLEAN DEFAULT FALSE,
-    can_read BOOLEAN DEFAULT FALSE,
-    can_update BOOLEAN DEFAULT FALSE,
-    can_delete BOOLEAN DEFAULT FALSE,
-	can_export BOOLEAN DEFAULT FALSE,
-	can_import BOOLEAN DEFAULT FALSE,
-    role_id VARCHAR(25) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (role_id) REFERENCES roles(id),
-    INDEX idx_roles_name (name)
-    );
+### `menu_categories`
+Groups for menu items.
+- `id`: VARCHAR(25) PRIMARY KEY
+- `name`: VARCHAR(50) UNIQUE
+- `description`: TEXT
+- `is_enabled`: BOOLEAN DEFAULT TRUE
 
-CREATE TABLE users (
-    id VARCHAR(25) PRIMARY KEY,
-  	username VARCHAR(50) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    fullname VARCHAR(100) NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
-    phone VARCHAR(15),
-    role_id VARCHAR(25) NOT NULL,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (role_id) REFERENCES roles(id),
-    INDEX idx_users_role (role_id),
-    INDEX idx_users_username (username),
-    INDEX idx_users_email (email),
-    INDEX idx_users_active (is_active)
-);
+### `menu_items`
+Individual food and drink items.
+- `id`: VARCHAR(25) PRIMARY KEY
+- `name`: VARCHAR(255) UNIQUE
+- `description`: TEXT
+- `category_id`: VARCHAR(25) (FK to menu_categories)
+- `preparation_time`: INT (minutes)
+- `is_available`: BOOLEAN DEFAULT TRUE
+- `ingredients`: TEXT
+- `chef_notes`: TEXT
+- `image_url`: VARCHAR(255)
 
--- SESSION MANAGEMENT
+### `option_types`
+Defines the selection mechanism for the option group.
+- `id`: VARCHAR(25) PRIMARY KEY
+- `name`: VARCHAR(100) UNIQUE (e.g., 'CHECKBOX', 'RADIO_BOX', 'QUANTITY')
 
-CREATE TABLE tables (
-    id VARCHAR(25) PRIMARY KEY,
-    table_number INT UNIQUE NOT NULL,
-    capacity INT NOT NULL CHECK (capacity BETWEEN 1 AND 20),
-    location_description VARCHAR(100),
-    status VARCHAR(20) DEFAULT 'available' CHECK (status IN ('available', 'occupied', 'reserved', 'maintenance')),
-    
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    INDEX idx_tables_status (status)
-);
+### `options`
+Specific options (e.g., "Beef Doneness", "Pizza Toppings").
+- `id`: VARCHAR(25) PRIMARY KEY
+- `name`: VARCHAR(255) UNIQUE
+- `display_name`: VARCHAR(255)
+- `option_type_id`: VARCHAR(25) (FK to option_types)
 
-CREATE TABLE session_statuses (
-	id VARCHAR(25) PRIMARY KEY,
-	name VARCHAR(100) NOT NULL,
-	description TEXT
-);
+### `option_values`
+The specific choices available within an option (e.g., "Rare", "Medium", "Mushroom").
+- `id`: VARCHAR(25) PRIMARY KEY
+- `option_id`: VARCHAR(25) (FK to options)
+- `name`: VARCHAR(255) (The display text, e.g., "Medium")
+- `display_order`: INT (Sort order: 1 for Rare, 2 for Medium...)
+- `is_default`: BOOLEAN DEFAULT FALSE (Pre-select this value?)
+- `is_available`: BOOLEAN DEFAULT TRUE (Mark specific choice as out of stock)
 
-CREATE TABLE session_types (
-	id VARCHAR(25) PRIMARY KEY,
-	name VARCHAR(100) UNIQUE NOT NULL,
-	display_name VARCHAR(255) NOT NULL,
-	fixed_price DECIMAL(10,2) DEFAULT 0 NOT NULL
-);
+### `menu_item_options`
+Many-to-many relationship between items and options.
+- `id`: VARCHAR(25) PRIMARY KEY
+- `menu_item_id`: VARCHAR(25) (FK to menu_items)
+- `option_id`: VARCHAR(25) (FK to options)
 
-CREATE TABLE sessions (
-	id VARCHAR(25) PRIMARY KEY,
-	token VARCHAR(255) UNIQUE NOT NULL,
-	table_id VARCHAR(25) NOT NULL,
-	session_type_id VARCHAR(25) NOT NULL,
-	
-	customer_count INT,
-	
-	start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	end_time TIMESTAMP,
-	expires_at TIMESTAMP,
-	
-	status_id VARCHAR(25) NOT NULL,
-	
-    created_by VARCHAR(25) NOT NULL,
-    
-    ended_by VARCHAR(25),
-    
-    customer_notes TEXT,
-    
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (table_id) REFERENCES tables(id),
-    FOREIGN KEY (session_type_id) REFERENCES session_types(id),
-    FOREIGN KEY (created_by) REFERENCES users(id),
-    FOREIGN KEY (ended_by) REFERENCES users(id),
-    
-    INDEX idx_sessions_table (table_id),
-    INDEX idx_sessions_status (status_id),
-    INDEX idx_sessions_type (session_type_id),
-    INDEX idx_sessions_timing (start_time, end_time)
-);
+<!-- ### `menu_item_dining_session_details`
+Session-specific pricing for menu items.
+- `id`: VARCHAR(25) PRIMARY KEY
+- `dining_session_type_id`: VARCHAR(25) (FK to session_types)
+- `menu_item_id`: VARCHAR(25) (FK to menu_items)
+- `price`: DECIMAL(10,2)
+- `pricing_model`: PricingModelType (ENUM) -->
 
--- MENU MANAGEMENT
-    
-CREATE TABLE menu_categories (
-    id VARCHAR(25) PRIMARY KEY DEFAULT (UUID()),
-    name VARCHAR(50) NOT NULL,
-    description TEXT,
-    status ENUM('active', 'disabled') DEFAULT 'active',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    INDEX idx_menu_category_name (name),
-    INDEX idx_menu_category_status (status)
-);
+### `price_list_items`
+- `id`: VARCHAR(25) PRIMARY KEY,
+- `menu_item_id`: VARCHAR(25) (FK to menu_items)
+- `price_list_id`: VARCHAR(25) (FK to price_list)
+- `is_included`: BOOLEAN DEFAULT TRUE
+- `price`: DECIMAL(10,2)
+UNIQUE(price_list_id, menu_item_id)
 
-CREATE TABLE option_types (
-	id VARCHAR(25) PRIMARY KEY,
-	name VARCHAR(100) UNIQUE NOT NULL
-);
+<!-- 
+### `dining_session_type_option_value_additional_prices`
+Session-specific surcharges for options.
+- `id`: VARCHAR(25) PRIMARY KEY
+- `additional_price`: DECIMAL(10,2)
+- `session_type_id`: VARCHAR(25) (FK to session_types)
+- `option_value_id`: VARCHAR(25) (FK to option_values) -->
 
-CREATE TABLE options (
-	id VARCHAR(25) PRIMARY KEY,
-	name VARCHAR(255) UNIQUE NOT NULL,
-	display_name VARCHAR(255) NOT NULL,
-	option_type_id VARCHAR(25) NOT NULL,
-	
-	FOREIGN KEY (option_type_id) REFERENCES option_types(id)
-);
+### `price_list_option_values`
+- `id`: VARCHAR(25)
+- `price_list_id`: VARCHAR(25) (FK to price_lists)
+- `option_value_id`: VARCHAR(25) (FK to option_values)
+- `price`: DECIMAL(10,2)
+- `is_included`: BOOLEAN DEFAULT TRUE
+UNIQUE(price_list_id, option_value_id)
 
-CREATE TABLE option_values (
-	id VARCHAR(25) PRIMARY KEY,
-	option_id VARCHAR(25) NOT NULL,
-	value VARCHAR(255) NOT NULL,
-	
-	FOREIGN KEY (option_id) REFERENCES options(id)
-);
+## 5. Order Management
 
-CREATE TABLE option_value_session_pricing (
-	id VARCHAR(25) PRIMARY KEY,
-	additional_price DECIMAL(10,2) NOT NULL DEFAULT 0,
-	session_type_id VARCHAR(25) NOT NULL,
-	option_value_id VARCHAR(25) NOT NULL,
-	
-	FOREIGN KEY (session_type_id) REFERENCES session_types(id),
-	FOREIGN KEY (option_value_id) REFERENCES option_values(id)
-);
+### `orders`
+Groups of items ordered together.
+- `id`: VARCHAR(25) PRIMARY KEY
+- `dining_session_id`: VARCHAR(25) (FK to sessions)
+- `created_by`: VARCHAR(25) (FK to users) ('CUSTOMER', 'WAITER', 'FRONT_DESK')
+- `updated_by`: VARCHAR(25) (FK to users) ('WAITER', 'CUSTOMER', 'FRONT_DESK', 'KITCHEN')
+- `served_by`: VARCHAR(25) (FK to users) ('WAITER')
+- `status`: OrderStatus (ENUM)
+- `special_instructions`: TEXT
 
-CREATE TABLE menu_items (
-    id VARCHAR(25) PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    description TEXT,
-    category_id VARCHAR(25) NOT NULL,
-    
-    preparation_time INT,
-    status VARCHAR(10) DEFAULT 'available' CHECK (status IN ('available', 'unavailable')),
-    ingredients TEXT,
-    chef_notes TEXT,
-    image_url VARCHAR(255),
-    
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (category_id) REFERENCES menu_categories(id),
-    INDEX idx_menu_items_category (category_id),
-    INDEX idx_menu_items_status (status)
-);
+### `order_items`
+Individual items within an order.
+- `id`: VARCHAR(25) PRIMARY KEY
+- `order_id`: VARCHAR(25) (FK to orders)
+- `menu_item_id`: VARCHAR(25) (FK to menu_items)
+- `menu_name_at_order`: VARCHAR(255)
+- `quantity`: INT
+- `price_at_order`: DECIMAL(10,2)
+- `subtotal`: DECIMAL(10,2) (Calculated: (price_at_order + (options_price * option_qty)) * quantity) 
+- `notes`: TEXT
+- `status`: OrderItemStatus (ENUM)
+- `cancellation_reason`: TEXT (Required if status is CANCELLED)
 
-CREATE TABLE menu_item_options (
-	id VARCHAR(25) PRIMARY KEY,
-	menu_item_id VARCHAR(25) NOT NULL,
-	option_id VARCHAR(25) NOT NULL,
-	
-	FOREIGN KEY (menu_item_id) REFERENCES menu_items(id),
-	FOREIGN KEY (option_id) REFERENCES options(id)
-);
+### `order_item_selected_options`
+Options selected for a specific order item.
+- `id`: VARCHAR(25) PRIMARY KEY
+- `order_item_id`: VARCHAR(25) (FK to order_items)
+- `option_value_id`: VARCHAR(25) (FK to option_values)
+- `quantity`: INT (For 'double' 'triple' a specific topping/option)
+- `additional_price_at_order`: DECIMAL(10,2) (Captured at time of order)
 
-CREATE TABLE pricing_models (
-	id VARCHAR(25) PRIMARY KEY,
-	type VARCHAR(50) UNIQUE NOT NULL
-);
+<!-- [X] -->
+## 6. Invoicing & Billing
 
-CREATE TABLE menu_item_session_details (
-	id VARCHAR(25) PRIMARY KEY,
-	session_type_id VARCHAR(25) NOT NULL,
-	menu_item_id VARCHAR(25) NOT NULL,
-	price DECIMAL(10,2) NOT NULL,
-	pricing_model_id VARCHAR(25) NOT NULL,
-	
-	FOREIGN KEY (session_type_id) REFERENCES session_types(id),
-	FOREIGN KEY (menu_item_id) REFERENCES menu_items(id),
-	FOREIGN KEY (pricing_model_id) REFERENCES pricing_models(id)
-);
+### `invoices`
+Final bill for a dining session.
+- `id`: VARCHAR(25) PRIMARY KEY
+- `invoice_number`: VARCHAR(50) UNIQUE
+- `session_id`: VARCHAR(25)
+- `items_total`: DECIMAL(10,2)
+- `service_charge_amount`: DECIMAL(10,2)
+- `tax_amount`: DECIMAL(10,2)
+- `discount_amount`: DECIMAL(10,2)
+- `dining_session_fee`: DECIMAL(10,2) (Fixed fee from session type)
+- `grand_total`: DECIMAL(10,2)
+- `status`: InvoiceStatus (ENUM)
+- `generated_by`: VARCHAR(25) (FK to users) ('FRONT_DESK')
 
--- ORDER MANAGEMENT
+### `invoice_adjustments`
+Taxes, service charges, and discounts applied to invoices.
+- `id`: VARCHAR(25) PRIMARY KEY
+- `invoice_id`: VARCHAR(25) (FK to invoices)
+- `name`: VARCHAR(255)
+- `display_name`: VARCHAR(255)
+- `category`: AdjustmentCategory (ENUM)
+- `type`: AdjustmentType (ENUM)
+- `value`: DECIMAL(15,2)
+- `is_enabled`: BOOLEAN DEFAULT TRUE
 
-CREATE TABLE orders (
-    id VARCHAR(25) PRIMARY KEY,
-    session_id VARCHAR(25) NOT NULL,
-    created_by VARCHAR(25) NOT NULL,
-    updated_by VARCHAR(25) NOT NULL,
-    served_by VARCHAR(25) NOT NULL,
+### `payment_methods`
+Available payment options (Cash, Card, etc.).
+- `id`: VARCHAR(25) PRIMARY KEY
+- `name`: VARCHAR(50) UNIQUE
+- `is_active`: BOOLEAN DEFAULT TRUE
 
-    status VARCHAR(50) NOT NULL DEFAULT 'Pending', -- e.g., Pending, Preparing, Ready, Served, Cancelled
-
-    special_instructions TEXT
-    
-    FOREIGN KEY (session_id) REFERENCES sessions(id),
-    FOREIGN KEY (created_by) REFERENCES users(id),
-    FOREIGN KEY (updated_by) REFERENCES users(id),
-    FOREIGN KEY (served_by) REFERENCES users(id),
-);
-
-CREATE TABLE order_items (
-    id VARCHAR(25) PRIMARY KEY,
-    order_id VARCHAR(25) NOT NULL,
-    menu_item_id VARCHAR(25) NOT NULL,
-    quantity INT NOT NULL DEFAULT 1,
-    price_at_order DECIMAL(10, 2) NOT NULL,
-    subtotal DECIMAL(10, 2) NOT NULL, -- (quantity * price_at_order)
-    notes TEXT,
-    status VARCHAR(50) NOT NULL DEFAULT 'QUEUED', -- e.g., QUEUED, COOKING, Ready, Served, Cancelled
-    
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
-    FOREIGN KEY (order_id) REFERENCES orders(id),
-    FOREIGN KEY (menu_item_id) REFERENCES menu_items(id)
-);
-
-CREATE TABLE order_item_selected_options (
-    id VARCHAR(25) PRIMARY KEY,
-    order_item_id VARCHAR(25) NOT NULL,
-    option_value_id VARCHAR(25) NOT NULL,
-
-    additional_price DECIMAL(10, 2) DEFAULT 0, -- Store extra cost at time of order (derived from session_type_option_value_additional_prices)
-
-    FOREIGN KEY (order_item_id) REFERENCES order_items(id),
-    FOREIGN KEY (option_value_id) REFERENCES option_values(id)
-);
-
-CREATE TABLE invoices (
-    id VARCHAR(25) PRIMARY KEY,
-    invoice_number VARCHAR(50) UNIQUE NOT NULL, -- Human readable sequence (e.g., INV-2023-0001)
-    session_id VARCHAR(25) UNIQUE NOT NULL, -- One invoice per session usually
-    
-    -- Monetary Calculations
-    items_total DECIMAL(10,2) NOT NULL DEFAULT 0, -- Sum of order_items
-    service_charge_amount DECIMAL(10,2) DEFAULT 0,
-    tax_amount DECIMAL(10,2) DEFAULT 0,
-    discount_amount DECIMAL(10,2) DEFAULT 0,
-    
-    -- This handles the fixed_price from the session_types table (e.g., Buffet entrance fee)
-    session_fee DECIMAL(10,2) DEFAULT 0, 
-    
-    grand_total DECIMAL(10,2) NOT NULL,
-    
-    status VARCHAR(20) DEFAULT 'unpaid' CHECK (status IN ('unpaid', 'partially_paid', 'paid', 'void', 'refunded')),
-    
-    generated_by VARCHAR(25) NOT NULL, -- User who printed/created the bill
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (session_id) REFERENCES sessions(id),
-    FOREIGN KEY (generated_by) REFERENCES users(id),
-    
-    INDEX idx_invoices_session (session_id),
-    INDEX idx_invoices_status (status),
-    INDEX idx_invoices_date (created_at)
-);
-
-CREATE TABLE invoice_adjustments (
-    id VARCHAR(25) PRIMARY KEY,
-    invoice_id VARCHAR(25) NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    display_name VARCHAR(255) NOT NULL, -- e.g., "VAT (7%)", "SERVICE CHARGE", "DISCOUNT"
-
-    category VARCHAR (20) NOT NULL CHECK (category IN ('TAX', 'SERVICE_CHARGE', "DISCOUNT", "OTHER")),
-
-    type VARCHAR (20) NOT NULL CHECK (type IN ('FIXED', 'PERCENTAGE')),
-
-    value DECIMAL(15, 2) DEFAULT 0.00, -- Stores either % or $ amount
-
-    is_enabled BOOLEAN DEFAULT TRUE,
-
-    created_by VARCHAR(25) NOT NULL,
-    updated_by VARCHAR(25) NOT NULL,
-
-    FOREIGN KEY (created_by) REFERENCES users(id),
-    FOREIGN KEY (updated_by) REFERENCES users(id)
-);
-
-CREATE TABLE payment_methods (
-    id VARCHAR(25) PRIMARY KEY,
-    name VARCHAR(50) NOT NULL, -- Cash, Credit Card, Debit Card, QR Code, Voucher
-    is_active BOOLEAN DEFAULT TRUE
-);
-
-CREATE TABLE payments (
-    id VARCHAR(25) PRIMARY KEY,
-    invoice_id VARCHAR(25) NOT NULL,
-    payment_method_id VARCHAR(25) NOT NULL,
-    
-    amount DECIMAL(10,2) NOT NULL,
-    
-    transaction_reference VARCHAR(100), -- ID from the card terminal or bank transfer
-    processed_by VARCHAR(25) NOT NULL, -- User who took the money
-    
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (invoice_id) REFERENCES invoices(id),
-    FOREIGN KEY (payment_method_id) REFERENCES payment_methods(id),
-    FOREIGN KEY (processed_by) REFERENCES users(id),
-    
-    INDEX idx_payments_invoice (invoice_id)
-);
-
-    SHOW TABLES;
-    SELECT * FROM permissions;
+### `payments`
+Transaction records for invoices.
+- `id`: VARCHAR(25) PRIMARY KEY
+- `invoice_id`: VARCHAR(25) (FK to invoices)
+- `payment_method_id`: VARCHAR(25) (FK to payment_methods)
+- `amount`: DECIMAL(15,2)
+- `change`: DECIMAL(15,2)
+- `transaction_reference`: VARCHAR(100)
+- `processed_by`: VARCHAR(25) (FK to users)
