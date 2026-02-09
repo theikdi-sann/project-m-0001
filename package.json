@@ -1,0 +1,24 @@
+{
+  "name": "project-m-0001",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/theikdi-sann/project-m-0001.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/theikdi-sann/project-m-0001/issues"
+  },
+  "homepage": "https://github.com/theikdi-sann/project-m-0001#readme",
+  "devDependencies": {
+    "supabase": "^2.76.6"
+  }
+}
