@@ -14,6 +14,7 @@ type Querier interface {
 	CreateDiningSession(ctx context.Context, arg CreateDiningSessionParams) (DiningSession, error)
 	GetActiveSessionByTableID(ctx context.Context, tableID pgtype.UUID) (DiningSession, error)
 	GetDiningSession(ctx context.Context, id pgtype.UUID) (DiningSession, error)
+	GetSessionType(ctx context.Context, id pgtype.UUID) (DiningSessionType, error)
 	ListActiveDiningSessions(ctx context.Context) ([]DiningSession, error)
 	UpdateDiningSessionStatus(ctx context.Context, arg UpdateDiningSessionStatusParams) (DiningSession, error)
 }

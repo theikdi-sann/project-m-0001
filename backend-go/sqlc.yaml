@@ -1,6 +1,6 @@
 version: "2"
 sql:
-  - schema: "schema/migrations"
+  - schema: "../supabase/migrations"
     queries: "schema/queries"
     engine: "postgresql"
     gen:

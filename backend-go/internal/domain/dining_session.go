@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 )
 
 type SessionStatus string
@@ -24,8 +25,8 @@ type DiningSession struct {
 	Status        SessionStatus
 	StartTime     time.Time
 	ExpiresAt     *time.Time
-	PricePerGuest float64
-	TotalAmount   float64
+	PricePerGuest decimal.Decimal
+	TotalAmount   decimal.Decimal
 }
 
 type DiningSessionRepository interface {
@@ -43,7 +44,7 @@ type DiningSessionType struct {
 	ID              uuid.UUID
 	Name            string
 	IsBuffet        bool
-	Price           float64
+	Price           decimal.Decimal
 	DurationMinutes int
 }
 
@@ -55,11 +56,11 @@ func NewDiningSession(tableID, sessionTypeID, createdBy uuid.UUID, guestCount in
 		expiresAt = &expiryTime
 	}
 
-	pricePerGuest := 0.0
-	totalAmount := 0.0
+	pricePerGuest := decimal.Zero
+	totalAmount := decimal.Zero
 	if sessionType.IsBuffet {
 		pricePerGuest = sessionType.Price
-		totalAmount = pricePerGuest * float64(guestCount)
+		totalAmount = pricePerGuest.Mul(decimal.NewFromInt(int64(guestCount)))
 	}
 
 	return &DiningSession{

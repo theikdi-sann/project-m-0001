@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/theikdi-sann/qr-restaurant-api/internal/domain"
@@ -96,7 +97,7 @@ func TestCreateSession(t *testing.T) {
 		sessionType := &domain.DiningSessionType{
 			ID:              sessionTypeID,
 			IsBuffet:        true,
-			Price:           10.0,
+			Price:           decimal.NewFromFloat(10.0),
 			DurationMinutes: 90,
 		}
 		mockTypeRepo.On("GetByID", mock.Anything, sessionTypeID).Return(sessionType, nil).Once()
@@ -104,7 +105,8 @@ func TestCreateSession(t *testing.T) {
 		// Mock: Create Session
 		// We use mock.MatchedBy to validate the session passed to repo has correct calculated fields
 		mockSessionRepo.On("Create", mock.Anything, mock.MatchedBy(func(s *domain.DiningSession) bool {
-			return s.TableID == tableID && s.TotalAmount == 20.0 && s.ExpiresAt != nil
+			expectedTotal := decimal.NewFromFloat(20.0)
+			return s.TableID == tableID && s.TotalAmount.Equal(expectedTotal) && s.ExpiresAt != nil
 		})).Return(&domain.DiningSession{ID: uuid.New()}, nil).Once()
 
 		_, err := usecase.CreateSession(context.Background(), input)

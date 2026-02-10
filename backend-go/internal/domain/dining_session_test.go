@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -32,7 +33,7 @@ func TestNewDiningSession(t *testing.T) {
 	})
 
 	t.Run("should calculate total price for buffet session", func(t *testing.T) {
-		price := 25.50
+		price := decimal.NewFromFloat(25.50)
 		guestCount := 3
 		buffetType := DiningSessionType{
 			ID:       sessionTypeID,
@@ -42,8 +43,8 @@ func TestNewDiningSession(t *testing.T) {
 
 		session := NewDiningSession(tableID, sessionTypeID, createdBy, guestCount, buffetType, startTime)
 
-		assert.Equal(t, price, session.PricePerGuest)
-		assert.Equal(t, price*float64(guestCount), session.TotalAmount)
+		assert.True(t, price.Equal(session.PricePerGuest))
+		assert.True(t, price.Mul(decimal.NewFromInt(int64(guestCount))).Equal(session.TotalAmount))
 	})
 
 	t.Run("should have nil expiry time for non-buffet (à la carte) session", func(t *testing.T) {

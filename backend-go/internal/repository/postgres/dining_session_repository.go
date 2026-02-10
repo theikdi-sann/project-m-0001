@@ -3,9 +3,12 @@ package postgres
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/shopspring/decimal"
 	"github.com/theikdi-sann/qr-restaurant-api/internal/domain"
 	"github.com/theikdi-sann/qr-restaurant-api/internal/repository/postgres/db"
 )
@@ -21,7 +24,7 @@ func NewDiningSessionRepository(queries *db.Queries) domain.DiningSessionReposit
 }
 
 func (r *diningSessionRepository) GetActiveSessionByTableID(ctx context.Context, tableID uuid.UUID) (*domain.DiningSession, error) {
-	row, err := r.queries.GetActiveSessionByTableID(ctx, tableID)
+	row, err := r.queries.GetActiveSessionByTableID(ctx, uuidToPg(tableID))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil // No active session found
@@ -33,15 +36,15 @@ func (r *diningSessionRepository) GetActiveSessionByTableID(ctx context.Context,
 
 func (r *diningSessionRepository) Create(ctx context.Context, session *domain.DiningSession) (*domain.DiningSession, error) {
 	arg := db.CreateDiningSessionParams{
-		TableID:       session.TableID,
-		SessionTypeID: session.SessionTypeID,
-		CreatedBy:     session.CreatedBy,
+		TableID:       uuidToPg(session.TableID),
+		SessionTypeID: uuidToPg(session.SessionTypeID),
+		CreatedBy:     uuidToPg(session.CreatedBy),
 		GuestCount:    int32(session.GuestCount),
 		Status:        string(session.Status),
-		StartTime:     session.StartTime,
-		ExpiresAt:     session.ExpiresAt,
-		PricePerGuest: session.PricePerGuest,
-		TotalAmount:   session.TotalAmount,
+		StartTime:     timeToPg(session.StartTime),
+		ExpiresAt:     timePtrToPg(session.ExpiresAt),
+		PricePerGuest: decimalToPg(session.PricePerGuest),
+		TotalAmount:   decimalToPg(session.TotalAmount),
 	}
 
 	row, err := r.queries.CreateDiningSession(ctx, arg)
@@ -53,7 +56,7 @@ func (r *diningSessionRepository) Create(ctx context.Context, session *domain.Di
 }
 
 func (r *diningSessionRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.DiningSession, error) {
-	row, err := r.queries.GetDiningSession(ctx, id)
+	row, err := r.queries.GetDiningSession(ctx, uuidToPg(id))
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +65,7 @@ func (r *diningSessionRepository) GetByID(ctx context.Context, id uuid.UUID) (*d
 
 func (r *diningSessionRepository) UpdateStatus(ctx context.Context, id uuid.UUID, status domain.SessionStatus) (*domain.DiningSession, error) {
 	arg := db.UpdateDiningSessionStatusParams{
-		ID:     id,
+		ID:     uuidToPg(id),
 		Status: string(status),
 	}
 	row, err := r.queries.UpdateDiningSessionStatus(ctx, arg)
@@ -74,15 +77,79 @@ func (r *diningSessionRepository) UpdateStatus(ctx context.Context, id uuid.UUID
 
 func mapToDomain(row db.DiningSession) *domain.DiningSession {
 	return &domain.DiningSession{
-		ID:            row.ID,
-		TableID:       row.TableID,
-		SessionTypeID: row.SessionTypeID,
-		CreatedBy:     row.CreatedBy,
+		ID:            pgToUuid(row.ID),
+		TableID:       pgToUuid(row.TableID),
+		SessionTypeID: pgToUuid(row.SessionTypeID),
+		CreatedBy:     pgToUuid(row.CreatedBy),
 		GuestCount:    int(row.GuestCount),
 		Status:        domain.SessionStatus(row.Status),
-		StartTime:     row.StartTime,
-		ExpiresAt:     row.ExpiresAt,
-		PricePerGuest: row.PricePerGuest,
-		TotalAmount:   row.TotalAmount,
+		StartTime:     row.StartTime.Time,
+		ExpiresAt:     pgTimePtr(row.ExpiresAt),
+		PricePerGuest: pgToDecimal(row.PricePerGuest),
+		TotalAmount:   pgToDecimal(row.TotalAmount),
+	}
+}
+
+// Helper functions for type conversion
+
+func uuidToPg(id uuid.UUID) pgtype.UUID {
+	return pgtype.UUID{Bytes: [16]byte(id), Valid: true}
+}
+
+func pgToUuid(id pgtype.UUID) uuid.UUID {
+	if !id.Valid {
+		return uuid.Nil
+	}
+	return uuid.UUID(id.Bytes)
+}
+
+func timeToPg(t time.Time) pgtype.Timestamptz {
+	return pgtype.Timestamptz{Time: t, Valid: true}
+}
+
+func timePtrToPg(t *time.Time) pgtype.Timestamptz {
+	if t == nil {
+		return pgtype.Timestamptz{Valid: false}
+	}
+	return pgtype.Timestamptz{Time: *t, Valid: true}
+}
+
+func pgTimePtr(t pgtype.Timestamptz) *time.Time {
+	if !t.Valid {
+		return nil
+	}
+	return &t.Time
+}
+
+func decimalToPg(d decimal.Decimal) pgtype.Numeric {
+	var num pgtype.Numeric
+	if err := num.Scan(d.String()); err != nil {
+		panic(err)
+	}
+	return num
+}
+
+func pgToDecimal(n pgtype.Numeric) decimal.Decimal {
+	if !n.Valid {
+		return decimal.Zero
+	}
+
+	// Convert directly to string first
+	val, err := n.Value()
+	if err != nil {
+		return decimal.Zero
+	}
+
+	// Type assertion is safer than Sprintf
+	switch v := val.(type) {
+	case string:
+		d, err := decimal.NewFromString(v)
+		if err != nil {
+			return decimal.Zero
+		}
+		return d
+	default:
+		// Fallback for edge cases (shouldn't happen with standard pgx)
+		return decimal.Zero
 	}
 }
