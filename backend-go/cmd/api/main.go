@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/theikdi-sann/qr-restaurant-api/internal/delivery/http"
@@ -51,6 +52,12 @@ func main() {
 
 	// 4. HTTP Server
 	r := gin.Default()
+
+	// CORS
+	config := cors.DefaultConfig()
+	config.AllowAllOrigins = true
+	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
+	r.Use(cors.New(config))
 
 	// Simple Health Check
 	r.GET("/health", func(c *gin.Context) {
