@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/theikdi-sann/qr-restaurant-api/internal/delivery/http"
+	"github.com/theikdi-sann/qr-restaurant-api/internal/delivery/http/middleware"
 	"github.com/theikdi-sann/qr-restaurant-api/internal/repository/postgres"
 	"github.com/theikdi-sann/qr-restaurant-api/internal/repository/postgres/db"
 	"github.com/theikdi-sann/qr-restaurant-api/internal/usecase"
@@ -17,6 +18,7 @@ func main() {
 	// 1. Configuration
 	dbSource := os.Getenv("DATABASE_URL")
 	if dbSource == "" {
+		// testing
 		dbSource = "postgresql://postgres:postgres@127.0.0.1:54328/postgres"
 	}
 
@@ -35,22 +37,39 @@ func main() {
 
 	// 3. Init Layers
 	queries := db.New(connPool)
-	
+
 	sessionRepo := postgres.NewDiningSessionRepository(queries)
 	sessionTypeRepo := postgres.NewSessionTypeRepository(queries)
+	menuRepo := postgres.NewMenuItemRepository(queries)
+	orderRepo := postgres.NewOrderRepository(connPool)
 
 	sessionUsecase := usecase.NewDiningSessionUsecase(sessionRepo, sessionTypeRepo)
+	orderUsecase := usecase.NewOrderUsecase(orderRepo, sessionRepo, menuRepo)
+
 	sessionHandler := http.NewDiningSessionHandler(sessionUsecase)
+	orderHandler := http.NewOrderHandler(orderUsecase)
 
 	// 4. HTTP Server
 	r := gin.Default()
-	
+
 	// Simple Health Check
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
 
-	sessionHandler.RegisterRoutes(r)
+	sessionHandler.RegisterPublicRoutes(r)
+
+	// Protected Routes
+	protected := r.Group("/")
+
+	jwksURL := os.Getenv("SUPABASE_JWKS_URL")
+	if jwksURL == "" {
+		jwksURL = "http://127.0.0.1:54321/auth/v1/.well-known/jwks.json"
+	}
+	protected.Use(middleware.NewAuthMiddleware(jwksURL))
+
+	sessionHandler.RegisterRoutes(protected)
+	orderHandler.RegisterRoutes(protected)
 
 	// 5. Run
 	port := os.Getenv("PORT")

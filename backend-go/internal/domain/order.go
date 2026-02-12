@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"context"
 	"time"
 
 	"github.com/google/uuid"
@@ -12,6 +13,7 @@ type OrderStatus string
 const (
 	OrderStatusPending   OrderStatus = "pending"
 	OrderStatusPreparing OrderStatus = "preparing"
+	OrderStatusReady     OrderStatus = "ready"
 	OrderStatusServed    OrderStatus = "served"
 	OrderStatusCancelled OrderStatus = "cancelled"
 )
@@ -32,6 +34,13 @@ type OrderItem struct {
 	Quantity   int
 	UnitPrice  decimal.Decimal
 	Notes      string
+}
+
+type OrderRepository interface {
+	Create(ctx context.Context, order *Order) (*Order, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*Order, error)
+	ListBySessionID(ctx context.Context, sessionID uuid.UUID) ([]*Order, error)
+	UpdateStatus(ctx context.Context, id uuid.UUID, status OrderStatus) (*Order, error)
 }
 
 // ValidateOrder checks if the order is valid based on the session status.

@@ -43,6 +43,44 @@ type DiningTable struct {
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
 
+type MenuCategory struct {
+	ID        pgtype.UUID        `json:"id"`
+	Name      string             `json:"name"`
+	SortOrder int32              `json:"sort_order"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+type MenuItem struct {
+	ID          pgtype.UUID        `json:"id"`
+	CategoryID  pgtype.UUID        `json:"category_id"`
+	Name        string             `json:"name"`
+	Description pgtype.Text        `json:"description"`
+	Price       pgtype.Numeric     `json:"price"`
+	ImageUrl    pgtype.Text        `json:"image_url"`
+	IsAvailable bool               `json:"is_available"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+type Order struct {
+	ID              pgtype.UUID        `json:"id"`
+	DiningSessionID pgtype.UUID        `json:"dining_session_id"`
+	Status          string             `json:"status"`
+	TotalAmount     pgtype.Numeric     `json:"total_amount"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
+type OrderItem struct {
+	ID         pgtype.UUID        `json:"id"`
+	OrderID    pgtype.UUID        `json:"order_id"`
+	MenuItemID pgtype.UUID        `json:"menu_item_id"`
+	Quantity   int32              `json:"quantity"`
+	UnitPrice  pgtype.Numeric     `json:"unit_price"`
+	Notes      pgtype.Text        `json:"notes"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+}
+
 type User struct {
 	ID        pgtype.UUID        `json:"id"`
 	Email     string             `json:"email"`

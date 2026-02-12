@@ -17,6 +17,7 @@ type CreateSessionInput struct {
 
 type DiningSessionUsecase interface {
 	CreateSession(ctx context.Context, input CreateSessionInput) (*domain.DiningSession, error)
+	GetSession(ctx context.Context, id uuid.UUID) (*domain.DiningSession, error)
 }
 
 type diningSessionUsecase struct {
@@ -30,6 +31,10 @@ func NewDiningSessionUsecase(s domain.DiningSessionRepository, t domain.DiningSe
 		sessionRepo:     s,
 		sessionTypeRepo: t,
 	}
+}
+
+func (u *diningSessionUsecase) GetSession(ctx context.Context, id uuid.UUID) (*domain.DiningSession, error) {
+	return u.sessionRepo.GetByID(ctx, id)
 }
 
 func (u *diningSessionUsecase) CreateSession(ctx context.Context, input CreateSessionInput) (*domain.DiningSession, error) {

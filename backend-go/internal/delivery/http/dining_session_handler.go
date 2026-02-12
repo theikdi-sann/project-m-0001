@@ -21,7 +21,6 @@ func NewDiningSessionHandler(u usecase.DiningSessionUsecase) *DiningSessionHandl
 type createSessionRequest struct {
 	TableID       string `json:"table_id" binding:"required"`
 	SessionTypeID string `json:"session_type_id" binding:"required"`
-	CreatedBy     string `json:"created_by" binding:"required"` // In real app, from Auth Context
 	GuestCount    int    `json:"guest_count" binding:"required,min=1"`
 }
 
@@ -44,16 +43,18 @@ func (h *DiningSessionHandler) CreateSession(c *gin.Context) {
 		return
 	}
 
-	createdBy, err := uuid.Parse(req.CreatedBy)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid User ID"})
+	// Get UserID from Context (set by AuthMiddleware)
+	userIDVal, exists := c.Get("userID") // Hardcoded key for now, or import from middleware if cyclic dep not an issue
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
+	userID := userIDVal.(uuid.UUID)
 
 	input := usecase.CreateSessionInput{
 		TableID:       tableID,
 		SessionTypeID: sessionTypeID,
-		CreatedBy:     createdBy,
+		CreatedBy:     userID,
 		GuestCount:    req.GuestCount,
 	}
 
@@ -67,6 +68,31 @@ func (h *DiningSessionHandler) CreateSession(c *gin.Context) {
 	c.JSON(http.StatusCreated, session)
 }
 
-func (h *DiningSessionHandler) RegisterRoutes(router *gin.Engine) {
+func (h *DiningSessionHandler) GetSession(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Session ID"})
+		return
+	}
+
+	session, err := h.usecase.GetSession(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if session == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Session not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, session)
+}
+
+func (h *DiningSessionHandler) RegisterRoutes(router gin.IRoutes) {
 	router.POST("/sessions", h.CreateSession)
+}
+
+func (h *DiningSessionHandler) RegisterPublicRoutes(router gin.IRoutes) {
+	router.GET("/sessions/:id", h.GetSession)
 }

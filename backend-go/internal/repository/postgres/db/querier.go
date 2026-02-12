@@ -12,11 +12,21 @@ import (
 
 type Querier interface {
 	CreateDiningSession(ctx context.Context, arg CreateDiningSessionParams) (DiningSession, error)
+	CreateMenuCategory(ctx context.Context, arg CreateMenuCategoryParams) (MenuCategory, error)
+	CreateMenuItem(ctx context.Context, arg CreateMenuItemParams) (MenuItem, error)
+	CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error)
+	CreateOrderItem(ctx context.Context, arg CreateOrderItemParams) (OrderItem, error)
 	GetActiveSessionByTableID(ctx context.Context, tableID pgtype.UUID) (DiningSession, error)
 	GetDiningSession(ctx context.Context, id pgtype.UUID) (DiningSession, error)
+	GetMenuItem(ctx context.Context, id pgtype.UUID) (MenuItem, error)
+	GetOrder(ctx context.Context, id pgtype.UUID) (Order, error)
 	GetSessionType(ctx context.Context, id pgtype.UUID) (DiningSessionType, error)
 	ListActiveDiningSessions(ctx context.Context) ([]DiningSession, error)
+	ListMenuCategories(ctx context.Context) ([]MenuCategory, error)
+	ListMenuItemsByCategory(ctx context.Context, categoryID pgtype.UUID) ([]MenuItem, error)
+	ListOrdersBySession(ctx context.Context, diningSessionID pgtype.UUID) ([]Order, error)
 	UpdateDiningSessionStatus(ctx context.Context, arg UpdateDiningSessionStatusParams) (DiningSession, error)
+	UpdateOrderStatus(ctx context.Context, arg UpdateOrderStatusParams) (Order, error)
 }
 
 var _ Querier = (*Queries)(nil)
