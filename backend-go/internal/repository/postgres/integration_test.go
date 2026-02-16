@@ -35,8 +35,8 @@ func TestDiningSessionRepositoryIntegration(t *testing.T) {
 	conn := setupTestDB(t)
 	defer conn.Close()
 
-	queries := db.New(conn)
-	repo := NewDiningSessionRepository(queries)
+	// queries := db.New(conn)
+	repo := NewDiningSessionRepository(conn)
 	ctx := context.Background()
 
 	// 1. Seed Dependencies

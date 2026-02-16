@@ -4,4 +4,6 @@ node_modules/
 # ProjectContext.md
 TASKS.md
 .gemini/
+token_output.txt
+TOCHECK.md
 

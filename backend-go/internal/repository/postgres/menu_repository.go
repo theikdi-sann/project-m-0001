@@ -55,6 +55,23 @@ func (r *menuItemRepository) ListByCategory(ctx context.Context, categoryID uuid
 	return items, nil
 }
 
+func (r *menuItemRepository) ListCategories(ctx context.Context) ([]*domain.MenuCategory, error) {
+	rows, err := r.queries.ListMenuCategories(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var categories []*domain.MenuCategory
+	for _, row := range rows {
+		categories = append(categories, &domain.MenuCategory{
+			ID:        pgToUuid(row.ID),
+			Name:      row.Name,
+			SortOrder: int(row.SortOrder),
+		})
+	}
+	return categories, nil
+}
+
 // Helper for nullable text
 func pgTextPtr(t pgtype.Text) *string {
 	if !t.Valid {

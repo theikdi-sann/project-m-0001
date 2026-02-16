@@ -14,6 +14,7 @@ const (
 	SessionStatusActive    SessionStatus = "active"
 	SessionStatusCompleted SessionStatus = "completed"
 	SessionStatusCancelled SessionStatus = "cancelled"
+	SessionStatusExpired   SessionStatus = "expired"
 )
 
 type DiningSession struct {
@@ -33,6 +34,7 @@ type DiningSessionRepository interface {
 	Create(ctx context.Context, session *DiningSession) (*DiningSession, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*DiningSession, error)
 	GetActiveSessionByTableID(ctx context.Context, tableID uuid.UUID) (*DiningSession, error)
+	ListExpiredActiveSessions(ctx context.Context) ([]*DiningSession, error)
 	UpdateStatus(ctx context.Context, id uuid.UUID, status SessionStatus) (*DiningSession, error)
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -13,6 +14,7 @@ import (
 	"github.com/theikdi-sann/qr-restaurant-api/internal/repository/postgres"
 	"github.com/theikdi-sann/qr-restaurant-api/internal/repository/postgres/db"
 	"github.com/theikdi-sann/qr-restaurant-api/internal/usecase"
+	"github.com/theikdi-sann/qr-restaurant-api/internal/worker"
 )
 
 func main() {
@@ -39,7 +41,7 @@ func main() {
 	// 3. Init Layers
 	queries := db.New(connPool)
 
-	sessionRepo := postgres.NewDiningSessionRepository(queries)
+	sessionRepo := postgres.NewDiningSessionRepository(connPool)
 	sessionTypeRepo := postgres.NewSessionTypeRepository(queries)
 	menuRepo := postgres.NewMenuItemRepository(queries)
 	orderRepo := postgres.NewOrderRepository(connPool)
@@ -49,6 +51,7 @@ func main() {
 
 	sessionHandler := http.NewDiningSessionHandler(sessionUsecase)
 	orderHandler := http.NewOrderHandler(orderUsecase)
+	menuHandler := http.NewMenuHandler(menuRepo)
 
 	// 4. HTTP Server
 	r := gin.Default()
@@ -65,6 +68,7 @@ func main() {
 	})
 
 	sessionHandler.RegisterPublicRoutes(r)
+	menuHandler.RegisterPublicRoutes(r)
 
 	// Protected Routes
 	protected := r.Group("/")
@@ -78,12 +82,16 @@ func main() {
 	sessionHandler.RegisterRoutes(protected)
 	orderHandler.RegisterRoutes(protected)
 
+	// Background Worker
+	cleanupWorker := worker.NewSessionCleanupWorker(sessionRepo)
+	cleanupWorker.Start(context.Background(), 1*time.Minute)
+
 	// 5. Run
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
-	log.Printf("Server running on port %s", port)
+	log.Printf("Server running on port %s | current time: %s", port, time.Now())
 	if err := r.Run(":" + port); err != nil {
 		log.Fatalf("Failed to run server: %v", err)
 	}

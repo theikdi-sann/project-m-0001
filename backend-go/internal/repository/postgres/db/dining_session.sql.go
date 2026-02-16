@@ -160,6 +160,46 @@ func (q *Queries) ListActiveDiningSessions(ctx context.Context) ([]DiningSession
 	return items, nil
 }
 
+const listExpiredSessions = `-- name: ListExpiredSessions :many
+SELECT id, table_id, session_type_id, created_by, guest_count, status, start_time, expires_at, price_per_guest, total_amount, created_at, updated_at FROM dining_sessions
+WHERE status = 'active' 
+  AND expires_at IS NOT NULL 
+  AND expires_at < NOW()
+`
+
+func (q *Queries) ListExpiredSessions(ctx context.Context) ([]DiningSession, error) {
+	rows, err := q.db.Query(ctx, listExpiredSessions)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []DiningSession
+	for rows.Next() {
+		var i DiningSession
+		if err := rows.Scan(
+			&i.ID,
+			&i.TableID,
+			&i.SessionTypeID,
+			&i.CreatedBy,
+			&i.GuestCount,
+			&i.Status,
+			&i.StartTime,
+			&i.ExpiresAt,
+			&i.PricePerGuest,
+			&i.TotalAmount,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateDiningSessionStatus = `-- name: UpdateDiningSessionStatus :one
 UPDATE dining_sessions
 SET status = $2, updated_at = NOW()
@@ -190,4 +230,20 @@ func (q *Queries) UpdateDiningSessionStatus(ctx context.Context, arg UpdateDinin
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const updateTableStatus = `-- name: UpdateTableStatus :exec
+UPDATE dining_tables
+SET status = $2, updated_at = NOW()
+WHERE id = $1
+`
+
+type UpdateTableStatusParams struct {
+	ID     pgtype.UUID `json:"id"`
+	Status string      `json:"status"`
+}
+
+func (q *Queries) UpdateTableStatus(ctx context.Context, arg UpdateTableStatusParams) error {
+	_, err := q.db.Exec(ctx, updateTableStatus, arg.ID, arg.Status)
+	return err
 }

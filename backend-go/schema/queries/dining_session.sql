@@ -18,11 +18,6 @@ RETURNING *;
 SELECT * FROM dining_sessions
 WHERE id = $1 LIMIT 1;
 
--- name: GetActiveSessionByTableID :one
-SELECT * FROM dining_sessions
-WHERE table_id = $1 AND status = 'active'
-LIMIT 1;
-
 -- name: ListActiveDiningSessions :many
 SELECT * FROM dining_sessions
 WHERE status = 'active'
@@ -33,3 +28,19 @@ UPDATE dining_sessions
 SET status = $2, updated_at = NOW()
 WHERE id = $1
 RETURNING *;
+
+-- name: GetActiveSessionByTableID :one
+SELECT * FROM dining_sessions
+WHERE table_id = $1 AND status = 'active'
+LIMIT 1;
+
+-- name: ListExpiredSessions :many
+SELECT * FROM dining_sessions
+WHERE status = 'active' 
+  AND expires_at IS NOT NULL 
+  AND expires_at < NOW();
+
+-- name: UpdateTableStatus :exec
+UPDATE dining_tables
+SET status = $2, updated_at = NOW()
+WHERE id = $1;

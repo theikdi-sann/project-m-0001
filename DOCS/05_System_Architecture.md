@@ -32,6 +32,12 @@ Manager/Admin: Oversees active sessions, resolves overrides, manages staff, and 
 3.1 Session Management
 Initialization: Frontdesk staff create sessions and explicitly define the session type as Buffet, À la carte, or Take Away at creation.
 
+Session Lifecycle & Statuses:
+*   **Active:** Session created, dining in progress. (Table: Occupied).
+*   **Expired:** Buffet time limit reached. Staff alerted. Guests still present. (Table: Occupied).
+*   **Cancelled:** Session voided before payment. (Table: Available).
+*   **Completed:** Payment successful, guests left. (Table: Available).
+
 Buffet Rules (Dine-in): Features a fixed duration, with timers automatically enforced by the Go backend. The backend triggers a "Session Ending" alert 10 minutes before expiration. Extensions can be requested by waiters but must be executed by Frontdesk or higher. Requires a physical table assignment (Available -> Occupied).
 
 À La Carte Rules (Dine-in): No time limits exist; the session ends either by staff decision or when the customer requests the bill. Requires a physical table assignment (Available -> Occupied).
