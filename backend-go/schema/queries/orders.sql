@@ -22,3 +22,7 @@ UPDATE orders
 SET status = $2, updated_at = NOW()
 WHERE id = $1
 RETURNING *;
+
+-- name: ListOrderItems :many
+SELECT * FROM order_items
+WHERE order_id = $1;

@@ -36,6 +36,7 @@ type DiningSessionRepository interface {
 	GetActiveSessionByTableID(ctx context.Context, tableID uuid.UUID) (*DiningSession, error)
 	ListExpiredActiveSessions(ctx context.Context) ([]*DiningSession, error)
 	UpdateStatus(ctx context.Context, id uuid.UUID, status SessionStatus) (*DiningSession, error)
+	Extend(ctx context.Context, id uuid.UUID, newExpiry time.Time) (*DiningSession, error)
 }
 
 type DiningSessionTypeRepository interface {

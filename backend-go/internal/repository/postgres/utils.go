@@ -11,6 +11,9 @@ import (
 // Helper functions for type conversion
 
 func uuidToPg(id uuid.UUID) pgtype.UUID {
+	if id == uuid.Nil {
+		return pgtype.UUID{Valid: false}
+	}
 	return pgtype.UUID{Bytes: [16]byte(id), Valid: true}
 }
 

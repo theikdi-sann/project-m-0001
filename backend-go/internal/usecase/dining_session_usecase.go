@@ -18,6 +18,7 @@ type CreateSessionInput struct {
 type DiningSessionUsecase interface {
 	CreateSession(ctx context.Context, input CreateSessionInput) (*domain.DiningSession, error)
 	GetSession(ctx context.Context, id uuid.UUID) (*domain.DiningSession, error)
+	ExtendSession(ctx context.Context, id uuid.UUID, minutes int) (*domain.DiningSession, error)
 }
 
 type diningSessionUsecase struct {
@@ -37,15 +38,35 @@ func (u *diningSessionUsecase) GetSession(ctx context.Context, id uuid.UUID) (*d
 	return u.sessionRepo.GetByID(ctx, id)
 }
 
-func (u *diningSessionUsecase) CreateSession(ctx context.Context, input CreateSessionInput) (*domain.DiningSession, error) {
-	// 1. Check if table is occupied
-	activeSession, err := u.sessionRepo.GetActiveSessionByTableID(ctx, input.TableID)
+func (u *diningSessionUsecase) ExtendSession(ctx context.Context, id uuid.UUID, minutes int) (*domain.DiningSession, error) {
+	session, err := u.sessionRepo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	if activeSession != nil {
-		// Use a custom domain error in real app, simply string for now
-		return nil, domain.ErrTableOccupied
+	if session == nil {
+		return nil, domain.ErrNotFound
+	}
+
+	var newExpiry time.Time
+	if session.ExpiresAt != nil && session.ExpiresAt.After(time.Now()) {
+		newExpiry = session.ExpiresAt.Add(time.Duration(minutes) * time.Minute)
+	} else {
+		newExpiry = time.Now().Add(time.Duration(minutes) * time.Minute)
+	}
+
+	return u.sessionRepo.Extend(ctx, id, newExpiry)
+}
+
+func (u *diningSessionUsecase) CreateSession(ctx context.Context, input CreateSessionInput) (*domain.DiningSession, error) {
+	// 1. Check if table is occupied (if table is assigned)
+	if input.TableID != uuid.Nil {
+		activeSession, err := u.sessionRepo.GetActiveSessionByTableID(ctx, input.TableID)
+		if err != nil {
+			return nil, err
+		}
+		if activeSession != nil {
+			return nil, domain.ErrTableOccupied
+		}
 	}
 
 	// 2. Get Session Type details (for pricing/duration)

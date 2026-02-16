@@ -4,10 +4,13 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Scan, AlertCircle, Loader2 } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 function SessionLoader() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { t } = useLanguage();
   const [status, setStatus] = useState<"idle" | "loading" | "error" | "success">("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -50,7 +53,7 @@ function SessionLoader() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center">
         <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
-        <h2 className="text-xl font-semibold">Joining Table...</h2>
+        <h2 className="text-xl font-semibold">{t("joining")}</h2>
       </div>
     );
   }
@@ -59,13 +62,13 @@ function SessionLoader() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center text-red-600">
         <AlertCircle className="w-16 h-16 mb-4" />
-        <h2 className="text-2xl font-bold mb-2">Oops!</h2>
+        <h2 className="text-2xl font-bold mb-2">{t("oops")}</h2>
         <p>{errorMessage}</p>
         <button 
           onClick={() => window.location.reload()}
           className="mt-6 px-6 py-2 bg-blue-600 text-white rounded-full"
         >
-          Try Again
+          {t("try_again")}
         </button>
       </div>
     );
@@ -73,13 +76,16 @@ function SessionLoader() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center bg-gray-50 text-gray-900">
+      <div className="absolute top-4 right-4">
+        <LanguageSwitcher />
+      </div>
       <div className="bg-white p-8 rounded-2xl shadow-xl max-w-sm w-full">
         <Scan className="w-16 h-16 text-blue-600 mx-auto mb-6" />
-        <h1 className="text-3xl font-bold mb-2">Welcome</h1>
-        <p className="text-gray-500 mb-8">Scan the QR code on your table to start ordering.</p>
+        <h1 className="text-3xl font-bold mb-2">{t("welcome")}</h1>
+        <p className="text-gray-500 mb-8">{t("scan_instruction")}</p>
         
         <div className="p-4 bg-blue-50 rounded-lg text-sm text-blue-700">
-          Waiting for QR Code...
+          {t("waiting_qr")}
         </div>
       </div>
     </div>

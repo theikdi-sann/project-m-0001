@@ -12,7 +12,7 @@ import (
 	"github.com/theikdi-sann/qr-restaurant-api/internal/domain"
 )
 
-// Mocks
+// Mocks for Order Tests
 type MockOrderRepo struct {
 	mock.Mock
 }
@@ -42,6 +42,33 @@ func (m *MockOrderRepo) UpdateStatus(ctx context.Context, id uuid.UUID, status d
 	return args.Get(0).(*domain.Order), args.Error(1)
 }
 
+type MockSessionRepoOrder struct {
+	mock.Mock
+}
+
+func (m *MockSessionRepoOrder) Create(ctx context.Context, session *domain.DiningSession) (*domain.DiningSession, error) {
+	return nil, nil
+}
+func (m *MockSessionRepoOrder) GetByID(ctx context.Context, id uuid.UUID) (*domain.DiningSession, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.DiningSession), args.Error(1)
+}
+func (m *MockSessionRepoOrder) GetActiveSessionByTableID(ctx context.Context, tableID uuid.UUID) (*domain.DiningSession, error) {
+	return nil, nil
+}
+func (m *MockSessionRepoOrder) ListExpiredActiveSessions(ctx context.Context) ([]*domain.DiningSession, error) {
+	return nil, nil
+}
+func (m *MockSessionRepoOrder) UpdateStatus(ctx context.Context, id uuid.UUID, status domain.SessionStatus) (*domain.DiningSession, error) {
+	return nil, nil
+}
+func (m *MockSessionRepoOrder) Extend(ctx context.Context, id uuid.UUID, newExpiry time.Time) (*domain.DiningSession, error) {
+	return nil, nil
+}
+
 type MockMenuItemRepo struct {
 	mock.Mock
 }
@@ -56,10 +83,13 @@ func (m *MockMenuItemRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.M
 func (m *MockMenuItemRepo) ListByCategory(ctx context.Context, categoryID uuid.UUID) ([]*domain.MenuItem, error) {
 	return nil, nil
 }
+func (m *MockMenuItemRepo) ListCategories(ctx context.Context) ([]*domain.MenuCategory, error) {
+	return nil, nil
+}
 
 func TestCreateOrder(t *testing.T) {
 	mockOrderRepo := new(MockOrderRepo)
-	mockSessionRepo := new(MockSessionRepo) // Reusing existing mock if possible, or redefine
+	mockSessionRepo := new(MockSessionRepoOrder)
 	mockMenuRepo := new(MockMenuItemRepo)
 
 	usecase := NewOrderUsecase(mockOrderRepo, mockSessionRepo, mockMenuRepo)

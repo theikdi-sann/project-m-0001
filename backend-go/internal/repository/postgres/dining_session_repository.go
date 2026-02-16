@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -132,6 +133,18 @@ func (r *diningSessionRepository) ListExpiredActiveSessions(ctx context.Context)
 		sessions = append(sessions, mapToDomain(row))
 	}
 	return sessions, nil
+}
+
+func (r *diningSessionRepository) Extend(ctx context.Context, id uuid.UUID, newExpiry time.Time) (*domain.DiningSession, error) {
+	arg := db.ExtendSessionParams{
+		ID:        uuidToPg(id),
+		ExpiresAt: timeToPg(newExpiry),
+	}
+	row, err := db.New(r.pool).ExtendSession(ctx, arg)
+	if err != nil {
+		return nil, err
+	}
+	return mapToDomain(row), nil
 }
 
 func mapToDomain(row db.DiningSession) *domain.DiningSession {

@@ -3,8 +3,12 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import useSWR from "swr";
-import { MenuCategory, MenuItem, CartItem } from "@/types/menu";
-import { ShoppingCart, Plus, Minus, Loader2 } from "lucide-react";
+import { MenuCategory, MenuItem } from "@/types/menu";
+import { useCart } from "@/context/CartContext";
+import { Plus, Minus, Loader2, Receipt } from "lucide-react";
+import { toast } from "sonner";
+import { useLanguage } from "@/context/LanguageContext";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -12,8 +16,9 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function MenuPage() {
   const router = useRouter();
+  const { t } = useLanguage();
+  const { addToCart, removeFromCart, getQuantity, totalItems, totalPrice } = useCart();
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [cart, setCart] = useState<CartItem[]>([]);
 
   // 1. Fetch Categories
   const { data: categories, error: catError } = useSWR<MenuCategory[]>(
@@ -51,13 +56,12 @@ export default function MenuPage() {
       .then((session) => {
         if (session.Status !== "active") {
           localStorage.removeItem("qr_session_id");
-          alert("Session has ended.");
+          toast.error(t("session_ended"));
           router.push("/");
         }
-        // Optional: Check Expiry Time client-side too
         if (session.ExpiresAt && new Date(session.ExpiresAt) < new Date()) {
            localStorage.removeItem("qr_session_id");
-           alert("Session expired.");
+           toast.error(t("session_expired"));
            router.push("/");
         }
       })
@@ -65,37 +69,7 @@ export default function MenuPage() {
         localStorage.removeItem("qr_session_id");
         router.push("/");
       });
-  }, [router]);
-
-  const addToCart = (item: MenuItem) => {
-    setCart((prev) => {
-      const existing = prev.find((i) => i.menuItem.ID === item.ID);
-      if (existing) {
-        return prev.map((i) =>
-          i.menuItem.ID === item.ID ? { ...i, quantity: i.quantity + 1 } : i
-        );
-      }
-      return [...prev, { menuItem: item, quantity: 1 }];
-    });
-  };
-
-  const removeFromCart = (itemId: string) => {
-    setCart((prev) => {
-      return prev
-        .map((i) => (i.menuItem.ID === itemId ? { ...i, quantity: i.quantity - 1 } : i))
-        .filter((i) => i.quantity > 0);
-    });
-  };
-
-  const getQuantity = (itemId: string) => {
-    return cart.find((i) => i.menuItem.ID === itemId)?.quantity || 0;
-  };
-
-  const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
-  const totalPrice = cart.reduce(
-    (acc, item) => acc + item.quantity * parseFloat(item.menuItem.Price),
-    0
-  );
+  }, [router, t]);
 
   if (catError) return <div className="p-4 text-red-500">Failed to load menu.</div>;
   if (!categories) return <div className="p-4 flex justify-center"><Loader2 className="animate-spin"/></div>;
@@ -104,9 +78,20 @@ export default function MenuPage() {
     <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header */}
       <div className="bg-white shadow-sm p-4 sticky top-0 z-10">
-        <h1 className="text-xl font-bold text-gray-800">Menu</h1>
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-xl font-bold text-gray-800">{t("menu")}</h1>
+          <div className="flex items-center space-x-2">
+            <LanguageSwitcher />
+            <button 
+              onClick={() => router.push("/orders")}
+              className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 text-gray-600"
+            >
+              <Receipt size={20} />
+            </button>
+          </div>
+        </div>
         {/* Category Tabs */}
-        <div className="flex space-x-4 overflow-x-auto mt-4 pb-2 no-scrollbar">
+        <div className="flex space-x-4 overflow-x-auto pb-2 no-scrollbar">
           {categories.map((cat) => (
             <button
               key={cat.ID}
@@ -135,7 +120,6 @@ export default function MenuPage() {
               <div className="text-blue-600 font-bold mt-2">${item.Price}</div>
             </div>
             
-            {/* Add/Remove Controls */}
             <div className="flex flex-col items-center ml-4 space-y-2">
               {getQuantity(item.ID) > 0 ? (
                 <div className="flex flex-col items-center bg-gray-100 rounded-lg p-1">
@@ -162,11 +146,11 @@ export default function MenuPage() {
         <div className="fixed bottom-4 left-4 right-4 max-w-md mx-auto">
           <button 
             className="w-full bg-blue-600 text-white p-4 rounded-xl shadow-lg flex justify-between items-center"
-            onClick={() => router.push("/cart")} // We will build this page next
+            onClick={() => router.push("/cart")} 
           >
             <div className="flex items-center space-x-3">
               <div className="bg-blue-800 px-3 py-1 rounded-full text-xs font-bold">{totalItems}</div>
-              <span className="font-medium">View Order</span>
+              <span className="font-medium">{t("view_order")}</span>
             </div>
             <span className="font-bold">${totalPrice.toFixed(2)}</span>
           </button>

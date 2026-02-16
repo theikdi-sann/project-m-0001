@@ -70,6 +70,38 @@ func (q *Queries) CreateDiningSession(ctx context.Context, arg CreateDiningSessi
 	return i, err
 }
 
+const extendSession = `-- name: ExtendSession :one
+UPDATE dining_sessions
+SET expires_at = $2, status = 'active', updated_at = NOW()
+WHERE id = $1
+RETURNING id, table_id, session_type_id, created_by, guest_count, status, start_time, expires_at, price_per_guest, total_amount, created_at, updated_at
+`
+
+type ExtendSessionParams struct {
+	ID        pgtype.UUID        `json:"id"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+}
+
+func (q *Queries) ExtendSession(ctx context.Context, arg ExtendSessionParams) (DiningSession, error) {
+	row := q.db.QueryRow(ctx, extendSession, arg.ID, arg.ExpiresAt)
+	var i DiningSession
+	err := row.Scan(
+		&i.ID,
+		&i.TableID,
+		&i.SessionTypeID,
+		&i.CreatedBy,
+		&i.GuestCount,
+		&i.Status,
+		&i.StartTime,
+		&i.ExpiresAt,
+		&i.PricePerGuest,
+		&i.TotalAmount,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getActiveSessionByTableID = `-- name: GetActiveSessionByTableID :one
 SELECT id, table_id, session_type_id, created_by, guest_count, status, start_time, expires_at, price_per_guest, total_amount, created_at, updated_at FROM dining_sessions
 WHERE table_id = $1 AND status = 'active'

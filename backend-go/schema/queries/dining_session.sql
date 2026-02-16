@@ -44,3 +44,9 @@ WHERE status = 'active'
 UPDATE dining_tables
 SET status = $2, updated_at = NOW()
 WHERE id = $1;
+
+-- name: ExtendSession :one
+UPDATE dining_sessions
+SET expires_at = $2, status = 'active', updated_at = NOW()
+WHERE id = $1
+RETURNING *;

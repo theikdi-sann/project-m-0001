@@ -1,5 +1,5 @@
 # PROJECT CONTEXT: Hybrid Restaurant QR Management System
-I am building a comprehensive restaurant management system as a Solo Developer.
+I am building a **comprehensive, enterprise-grade** restaurant management system as a Solo Developer. The goal is to deliver a fully functional, scalable, and robust solution that modernizes dining operations.
 
 ## 1. Core Concept
 * Product: A hybrid QR ordering system for restaurants in Myanmar.
@@ -21,14 +21,14 @@ I am building a comprehensive restaurant management system as a Solo Developer.
     * *Mobile Wrapper:* Capacitor (for Staff App to handle Background Mode, Wake Lock, and TCP Thermal Printing).
 * Deployment: Docker Compose + Nginx (Reverse Proxy) + Systemd (for Go binary).
 
-## 3. Current Progress (Phase 1: Foundation)
-* Completed:
-    * Domain entities (`DiningSession`, `Order`) defined.
-    * Database Schema (Tables: users, dining_tables, dining_sessions, `orders`) created via SQL migration.
-    * Repository Interface defined.
-* Current Task: Implementing the Create Dining Session Usecase.
-    * *Logic:* Check if table is occupied -> If not, create session.
-    * *Method:* TDD (Mocking the Repository first).
+## 3. Current Progress (Phase 3: Frontend Implementation)
+* **Completed (Backend):**
+    * **Domain & Logic:** Session (Buffet Timers), Order (Validation), Menu Management.
+    * **Infrastructure:** Postgres Schema (Migrations), Supabase Realtime (Orders), Session Cleanup Worker.
+    * **Security:** JWT Auth Middleware (verifying Supabase tokens), RBAC foundation.
+    * **API:** Exposed secure endpoints for Sessions, Orders, and Menu.
+* **Current Task:** Building the Customer Web App (Next.js).
+    * *Features:* QR Entry (Done), Menu Browsing (Done), Cart & Ordering (Done), Order Status (In Progress).
 
 ## 4. Development Rules for AI
 1.  Solo Dev Mode: Solutions must be simple and maintainable. Avoid over-engineering (e.g., no microservices, no Kubernetes).

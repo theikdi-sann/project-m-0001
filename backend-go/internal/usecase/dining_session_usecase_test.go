@@ -48,6 +48,14 @@ func (m *MockSessionRepo) UpdateStatus(ctx context.Context, id uuid.UUID, status
 	return args.Get(0).(*domain.DiningSession), args.Error(1)
 }
 
+func (m *MockSessionRepo) ListExpiredActiveSessions(ctx context.Context) ([]*domain.DiningSession, error) {
+	return nil, nil
+}
+
+func (m *MockSessionRepo) Extend(ctx context.Context, id uuid.UUID, newExpiry time.Time) (*domain.DiningSession, error) {
+	return nil, nil
+}
+
 // MockSessionTypeRepo
 type MockSessionTypeRepo struct {
 	mock.Mock
@@ -114,5 +122,33 @@ func TestCreateSession(t *testing.T) {
 		assert.NoError(t, err)
 		mockSessionRepo.AssertExpectations(t)
 		mockTypeRepo.AssertExpectations(t)
+	})
+
+	t.Run("should create take away session without table", func(t *testing.T) {
+		takeAwayType := &domain.DiningSessionType{
+			ID:   uuid.New(),
+			Name: "Take Away",
+		}
+		
+		inputTakeAway := CreateSessionInput{
+			TableID:       uuid.Nil, // No Table
+			SessionTypeID: takeAwayType.ID,
+			CreatedBy:     createdBy,
+			GuestCount:    1,
+		}
+
+		mockTypeRepo.On("GetByID", mock.Anything, takeAwayType.ID).Return(takeAwayType, nil).Once()
+
+		// Mock Create should accept uuid.Nil as TableID (or handle it)
+		mockSessionRepo.On("Create", mock.Anything, mock.MatchedBy(func(s *domain.DiningSession) bool {
+			return s.TableID == uuid.Nil && s.SessionTypeID == takeAwayType.ID
+		})).Return(&domain.DiningSession{ID: uuid.New(), TableID: uuid.Nil}, nil).Once()
+
+		// We do NOT check GetActiveSessionByTableID if TableID is Nil
+		// So we don't mock it (or verify it's not called)
+
+		_, err := usecase.CreateSession(context.Background(), inputTakeAway)
+		assert.NoError(t, err)
+		mockSessionRepo.AssertExpectations(t)
 	})
 }

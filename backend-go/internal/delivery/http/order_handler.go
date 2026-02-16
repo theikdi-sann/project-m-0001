@@ -85,6 +85,28 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 	c.JSON(http.StatusCreated, order)
 }
 
+func (h *OrderHandler) ListOrders(c *gin.Context) {
+	sessionIDStr := c.Query("session_id")
+	if sessionIDStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "session_id required"})
+		return
+	}
+
+	sessionID, err := uuid.Parse(sessionIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Session ID"})
+		return
+	}
+
+	orders, err := h.usecase.ListOrders(c.Request.Context(), sessionID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, orders)
+}
+
 func (h *OrderHandler) UpdateStatus(c *gin.Context) {
 	idStr := c.Param("id")
 	orderID, err := uuid.Parse(idStr)
@@ -121,5 +143,6 @@ func (h *OrderHandler) UpdateStatus(c *gin.Context) {
 
 func (h *OrderHandler) RegisterRoutes(router gin.IRoutes) {
 	router.POST("/orders", h.CreateOrder)
+	router.GET("/orders", h.ListOrders)
 	router.PATCH("/orders/:id/status", h.UpdateStatus)
 }

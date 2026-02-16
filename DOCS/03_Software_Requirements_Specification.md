@@ -24,7 +24,7 @@ The system encompasses a Customer Web App, a Staff Tablet App, a Go-based Logic 
 ### 3.1 Authentication & Session Management
 *   **FR-01:** The system shall allow customers to **join an active dining session** (previously created by staff) by scanning a QR code, which authenticates them anonymously via a secure token.
 *   **FR-02:** The system shall allow staff to log in using an email and password, authenticated against the Supabase Auth provider.
-*   **FR-03:** The system shall allow staff to create "Buffet" sessions with a defined time limit (e.g., 90 minutes) or "À la carte" sessions with no time limit.
+*   **FR-03:** The system shall allow staff to create **Buffet** (time-limited), **À la carte**, or **Take Away** sessions.
 *   **FR-04:** The Go backend shall automatically enforce buffet timers and trigger a "Session Ending" alert 10 minutes before expiration.
 
 ### 3.2 Menu & Ordering

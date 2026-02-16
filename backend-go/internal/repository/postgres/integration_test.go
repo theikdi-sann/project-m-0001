@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/theikdi-sann/qr-restaurant-api/internal/domain"
-	"github.com/theikdi-sann/qr-restaurant-api/internal/repository/postgres/db"
 )
 
 const dbSource = "postgresql://postgres:postgres@127.0.0.1:54328/postgres"
@@ -35,7 +34,6 @@ func TestDiningSessionRepositoryIntegration(t *testing.T) {
 	conn := setupTestDB(t)
 	defer conn.Close()
 
-	// queries := db.New(conn)
 	repo := NewDiningSessionRepository(conn)
 	ctx := context.Background()
 
@@ -125,5 +123,35 @@ func TestDiningSessionRepositoryIntegration(t *testing.T) {
 		activeSessionAfter, err := repo.GetActiveSessionByTableID(ctx, tableID)
 		require.NoError(t, err)
 		assert.Nil(t, activeSessionAfter, "Should return nil if no active session exists")
+	})
+
+	t.Run("Take Away Session Lifecycle", func(t *testing.T) {
+		// 1. Create Take Away Type (Duration NULL)
+		takeAwayTypeID := uuid.New()
+		_, err := conn.Exec(ctx, "INSERT INTO dining_session_types (id, name, is_buffet, price, duration_minutes) VALUES ($1, $2, $3, $4, NULL)", takeAwayTypeID, "Integration TakeAway", false, 0.00)
+		require.NoError(t, err)
+		defer conn.Exec(ctx, "DELETE FROM dining_session_types WHERE id = $1", takeAwayTypeID)
+
+		// 2. Create Session (Table Nil)
+		startTime := time.Now()
+		session := &domain.DiningSession{
+			TableID:       uuid.Nil, // No Table
+			SessionTypeID: takeAwayTypeID,
+			CreatedBy:     userID,
+			GuestCount:    1,
+			Status:        domain.SessionStatusActive,
+			StartTime:     startTime,
+			ExpiresAt:     nil, // Unlimited
+			PricePerGuest: decimal.Zero,
+			TotalAmount:   decimal.Zero,
+		}
+
+		createdSession, err := repo.Create(ctx, session)
+		require.NoError(t, err)
+		assert.NotEqual(t, uuid.Nil, createdSession.ID)
+		assert.Equal(t, uuid.Nil, createdSession.TableID) // Should be Nil
+		assert.Nil(t, createdSession.ExpiresAt)
+
+		defer conn.Exec(ctx, "DELETE FROM dining_sessions WHERE id = $1", createdSession.ID)
 	})
 }

@@ -91,6 +91,39 @@ func (q *Queries) GetOrder(ctx context.Context, id pgtype.UUID) (Order, error) {
 	return i, err
 }
 
+const listOrderItems = `-- name: ListOrderItems :many
+SELECT id, order_id, menu_item_id, quantity, unit_price, notes, created_at FROM order_items
+WHERE order_id = $1
+`
+
+func (q *Queries) ListOrderItems(ctx context.Context, orderID pgtype.UUID) ([]OrderItem, error) {
+	rows, err := q.db.Query(ctx, listOrderItems, orderID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []OrderItem
+	for rows.Next() {
+		var i OrderItem
+		if err := rows.Scan(
+			&i.ID,
+			&i.OrderID,
+			&i.MenuItemID,
+			&i.Quantity,
+			&i.UnitPrice,
+			&i.Notes,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listOrdersBySession = `-- name: ListOrdersBySession :many
 SELECT id, dining_session_id, status, total_amount, created_at, updated_at FROM orders
 WHERE dining_session_id = $1

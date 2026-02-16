@@ -98,14 +98,33 @@ func (r *orderRepository) ListBySessionID(ctx context.Context, sessionID uuid.UU
 		return nil, err
 	}
 
-	var orders []*domain.Order
+	orders := []*domain.Order{} // Initialize empty slice
 	for _, row := range rows {
+		// Fetch Items
+		itemsRows, err := db.New(r.pool).ListOrderItems(ctx, row.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		var items []domain.OrderItem
+		for _, itemRow := range itemsRows {
+			items = append(items, domain.OrderItem{
+				ID:         pgToUuid(itemRow.ID),
+				OrderID:    pgToUuid(itemRow.OrderID),
+				MenuItemID: pgToUuid(itemRow.MenuItemID),
+				Quantity:   int(itemRow.Quantity),
+				UnitPrice:  pgToDecimal(itemRow.UnitPrice),
+				Notes:      itemRow.Notes.String,
+			})
+		}
+
 		orders = append(orders, &domain.Order{
 			ID:              pgToUuid(row.ID),
 			DiningSessionID: pgToUuid(row.DiningSessionID),
 			Status:          domain.OrderStatus(row.Status),
 			TotalAmount:     pgToDecimal(row.TotalAmount),
 			CreatedAt:       row.CreatedAt.Time,
+			Items:           items,
 		})
 	}
 	return orders, nil
@@ -120,7 +139,7 @@ func (r *orderRepository) UpdateStatus(ctx context.Context, id uuid.UUID, status
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Return without items for now
 	return &domain.Order{
 		ID:              pgToUuid(row.ID),

@@ -11,7 +11,7 @@
 The purpose of this project is to develop a cost-effective, hybrid software solution that modernizes the restaurant dining experience. By integrating a web-based customer ordering interface with a native staff tablet application, the system aims to eliminate inefficiencies inherent in paper-based workflows, reduce wait times, and minimize order errors for both buffet and à la carte establishments.
 
 ### 2. Measurable Objectives
-*   **Delivery:** Launch a fully functional Minimum Viable Product (MVP) within **2 months**.
+*   **Delivery:** Launch a fully functional professional enterprise within **2 months**.
 *   **Cost Efficiency:** Maintain operational infrastructure costs below **$40 USD/month** using a high-performance VPS and open-source self-hosted technologies.
 *   **Performance:** Achieve sub-200ms API response times and real-time order synchronization latency under 500ms.
 *   **Adoption:** Enable a "no-app-download" experience for customers, ensuring 100% accessibility via standard smartphone cameras.

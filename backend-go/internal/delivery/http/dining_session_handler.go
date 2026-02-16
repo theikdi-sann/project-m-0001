@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/theikdi-sann/qr-restaurant-api/internal/domain"
 	"github.com/theikdi-sann/qr-restaurant-api/internal/usecase"
 )
 
@@ -19,7 +20,7 @@ func NewDiningSessionHandler(u usecase.DiningSessionUsecase) *DiningSessionHandl
 }
 
 type createSessionRequest struct {
-	TableID       string `json:"table_id" binding:"required"`
+	TableID       string `json:"table_id"` // Optional for Take Away
 	SessionTypeID string `json:"session_type_id" binding:"required"`
 	GuestCount    int    `json:"guest_count" binding:"required,min=1"`
 }
@@ -31,10 +32,16 @@ func (h *DiningSessionHandler) CreateSession(c *gin.Context) {
 		return
 	}
 
-	tableID, err := uuid.Parse(req.TableID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Table ID"})
-		return
+	var tableID uuid.UUID
+	var err error
+	if req.TableID != "" {
+		tableID, err = uuid.Parse(req.TableID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Table ID"})
+			return
+		}
+	} else {
+		tableID = uuid.Nil
 	}
 
 	sessionTypeID, err := uuid.Parse(req.SessionTypeID)
@@ -89,8 +96,40 @@ func (h *DiningSessionHandler) GetSession(c *gin.Context) {
 	c.JSON(http.StatusOK, session)
 }
 
+type extendSessionRequest struct {
+	Minutes int `json:"minutes" binding:"required,min=1"`
+}
+
+func (h *DiningSessionHandler) ExtendSession(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Session ID"})
+		return
+	}
+
+	var req extendSessionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	session, err := h.usecase.ExtendSession(c.Request.Context(), id, req.Minutes)
+	if err != nil {
+		if err == domain.ErrNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Session not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, session)
+}
+
 func (h *DiningSessionHandler) RegisterRoutes(router gin.IRoutes) {
 	router.POST("/sessions", h.CreateSession)
+	router.PATCH("/sessions/:id/extend", h.ExtendSession)
 }
 
 func (h *DiningSessionHandler) RegisterPublicRoutes(router gin.IRoutes) {
