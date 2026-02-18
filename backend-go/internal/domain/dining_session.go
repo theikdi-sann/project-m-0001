@@ -35,12 +35,14 @@ type DiningSessionRepository interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*DiningSession, error)
 	GetActiveSessionByTableID(ctx context.Context, tableID uuid.UUID) (*DiningSession, error)
 	ListExpiredActiveSessions(ctx context.Context) ([]*DiningSession, error)
+	ListActiveSessions(ctx context.Context) ([]*DiningSession, error)
 	UpdateStatus(ctx context.Context, id uuid.UUID, status SessionStatus) (*DiningSession, error)
 	Extend(ctx context.Context, id uuid.UUID, newExpiry time.Time) (*DiningSession, error)
 }
 
 type DiningSessionTypeRepository interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*DiningSessionType, error)
+	ListAll(ctx context.Context) ([]*DiningSessionType, error)
 }
 
 type DiningSessionType struct {

@@ -45,6 +45,7 @@ func main() {
 	sessionTypeRepo := postgres.NewSessionTypeRepository(queries)
 	menuRepo := postgres.NewMenuItemRepository(queries)
 	orderRepo := postgres.NewOrderRepository(connPool)
+	tableRepo := postgres.NewTableRepository(queries)
 
 	sessionUsecase := usecase.NewDiningSessionUsecase(sessionRepo, sessionTypeRepo)
 	orderUsecase := usecase.NewOrderUsecase(orderRepo, sessionRepo, menuRepo)
@@ -52,6 +53,7 @@ func main() {
 	sessionHandler := http.NewDiningSessionHandler(sessionUsecase)
 	orderHandler := http.NewOrderHandler(orderUsecase)
 	menuHandler := http.NewMenuHandler(menuRepo)
+	resourceHandler := http.NewResourceHandler(tableRepo, sessionTypeRepo)
 
 	// 4. HTTP Server
 	r := gin.Default()
@@ -82,6 +84,7 @@ func main() {
 	sessionHandler.RegisterRoutes(protected)
 	orderHandler.RegisterRoutes(protected)
 	menuHandler.RegisterProtectedRoutes(protected)
+	resourceHandler.RegisterProtectedRoutes(protected)
 
 	// Background Worker
 	cleanupWorker := worker.NewSessionCleanupWorker(sessionRepo)

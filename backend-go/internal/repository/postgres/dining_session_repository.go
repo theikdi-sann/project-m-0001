@@ -135,6 +135,19 @@ func (r *diningSessionRepository) ListExpiredActiveSessions(ctx context.Context)
 	return sessions, nil
 }
 
+func (r *diningSessionRepository) ListActiveSessions(ctx context.Context) ([]*domain.DiningSession, error) {
+	rows, err := db.New(r.pool).ListActiveDiningSessions(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var sessions []*domain.DiningSession
+	for _, row := range rows {
+		sessions = append(sessions, mapToDomain(row))
+	}
+	return sessions, nil
+}
+
 func (r *diningSessionRepository) Extend(ctx context.Context, id uuid.UUID, newExpiry time.Time) (*domain.DiningSession, error) {
 	arg := db.ExtendSessionParams{
 		ID:        uuidToPg(id),

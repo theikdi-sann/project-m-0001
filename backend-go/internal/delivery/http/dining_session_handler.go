@@ -127,9 +127,19 @@ func (h *DiningSessionHandler) ExtendSession(c *gin.Context) {
 	c.JSON(http.StatusOK, session)
 }
 
+func (h *DiningSessionHandler) ListActiveSessions(c *gin.Context) {
+	sessions, err := h.usecase.ListActiveSessions(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, sessions)
+}
+
 func (h *DiningSessionHandler) RegisterRoutes(router gin.IRoutes) {
 	router.POST("/sessions", h.CreateSession)
 	router.PATCH("/sessions/:id/extend", h.ExtendSession)
+	router.GET("/sessions", h.ListActiveSessions)
 }
 
 func (h *DiningSessionHandler) RegisterPublicRoutes(router gin.IRoutes) {

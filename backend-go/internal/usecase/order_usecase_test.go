@@ -62,6 +62,9 @@ func (m *MockSessionRepoOrder) GetActiveSessionByTableID(ctx context.Context, ta
 func (m *MockSessionRepoOrder) ListExpiredActiveSessions(ctx context.Context) ([]*domain.DiningSession, error) {
 	return nil, nil
 }
+func (m *MockSessionRepoOrder) ListActiveSessions(ctx context.Context) ([]*domain.DiningSession, error) {
+	return nil, nil
+}
 func (m *MockSessionRepoOrder) UpdateStatus(ctx context.Context, id uuid.UUID, status domain.SessionStatus) (*domain.DiningSession, error) {
 	return nil, nil
 }

@@ -52,6 +52,10 @@ func (m *MockSessionRepo) ListExpiredActiveSessions(ctx context.Context) ([]*dom
 	return nil, nil
 }
 
+func (m *MockSessionRepo) ListActiveSessions(ctx context.Context) ([]*domain.DiningSession, error) {
+	return nil, nil
+}
+
 func (m *MockSessionRepo) Extend(ctx context.Context, id uuid.UUID, newExpiry time.Time) (*domain.DiningSession, error) {
 	return nil, nil
 }

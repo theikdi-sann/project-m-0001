@@ -18,6 +18,7 @@ type CreateSessionInput struct {
 type DiningSessionUsecase interface {
 	CreateSession(ctx context.Context, input CreateSessionInput) (*domain.DiningSession, error)
 	GetSession(ctx context.Context, id uuid.UUID) (*domain.DiningSession, error)
+	ListActiveSessions(ctx context.Context) ([]*domain.DiningSession, error)
 	ExtendSession(ctx context.Context, id uuid.UUID, minutes int) (*domain.DiningSession, error)
 }
 
@@ -32,6 +33,10 @@ func NewDiningSessionUsecase(s domain.DiningSessionRepository, t domain.DiningSe
 		sessionRepo:     s,
 		sessionTypeRepo: t,
 	}
+}
+
+func (u *diningSessionUsecase) ListActiveSessions(ctx context.Context) ([]*domain.DiningSession, error) {
+	return u.sessionRepo.ListActiveSessions(ctx)
 }
 
 func (u *diningSessionUsecase) GetSession(ctx context.Context, id uuid.UUID) (*domain.DiningSession, error) {

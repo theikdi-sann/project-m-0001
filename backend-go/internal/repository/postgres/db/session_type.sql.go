@@ -31,3 +31,37 @@ func (q *Queries) GetSessionType(ctx context.Context, id pgtype.UUID) (DiningSes
 	)
 	return i, err
 }
+
+const listSessionTypes = `-- name: ListSessionTypes :many
+SELECT id, name, description, is_buffet, price, duration_minutes, created_at, updated_at FROM dining_session_types
+ORDER BY name ASC
+`
+
+func (q *Queries) ListSessionTypes(ctx context.Context) ([]DiningSessionType, error) {
+	rows, err := q.db.Query(ctx, listSessionTypes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []DiningSessionType
+	for rows.Next() {
+		var i DiningSessionType
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.IsBuffet,
+			&i.Price,
+			&i.DurationMinutes,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
