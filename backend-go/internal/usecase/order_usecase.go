@@ -12,6 +12,7 @@ import (
 type OrderUsecase interface {
 	CreateOrder(ctx context.Context, input CreateOrderInput) (*domain.Order, error)
 	ListOrders(ctx context.Context, sessionID uuid.UUID) ([]*domain.Order, error)
+	ListActiveOrders(ctx context.Context) ([]*domain.Order, error)
 	UpdateOrderStatus(ctx context.Context, orderID uuid.UUID, newStatus domain.OrderStatus) (*domain.Order, error)
 }
 
@@ -96,6 +97,10 @@ func (u *orderUsecase) CreateOrder(ctx context.Context, input CreateOrderInput) 
 
 func (u *orderUsecase) ListOrders(ctx context.Context, sessionID uuid.UUID) ([]*domain.Order, error) {
 	return u.orderRepo.ListBySessionID(ctx, sessionID)
+}
+
+func (u *orderUsecase) ListActiveOrders(ctx context.Context) ([]*domain.Order, error) {
+	return u.orderRepo.ListActiveOrders(ctx)
 }
 
 func (u *orderUsecase) UpdateOrderStatus(ctx context.Context, orderID uuid.UUID, newStatus domain.OrderStatus) (*domain.Order, error) {

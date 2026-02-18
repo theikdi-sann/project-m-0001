@@ -17,6 +17,11 @@ SELECT * FROM orders
 WHERE dining_session_id = $1
 ORDER BY created_at DESC;
 
+-- name: ListActiveOrders :many
+SELECT * FROM orders
+WHERE status IN ('pending', 'preparing', 'ready')
+ORDER BY created_at ASC;
+
 -- name: UpdateOrderStatus :one
 UPDATE orders
 SET status = $2, updated_at = NOW()

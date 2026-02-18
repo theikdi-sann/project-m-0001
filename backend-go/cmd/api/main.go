@@ -81,6 +81,7 @@ func main() {
 
 	sessionHandler.RegisterRoutes(protected)
 	orderHandler.RegisterRoutes(protected)
+	menuHandler.RegisterProtectedRoutes(protected)
 
 	// Background Worker
 	cleanupWorker := worker.NewSessionCleanupWorker(sessionRepo)

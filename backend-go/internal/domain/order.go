@@ -40,6 +40,7 @@ type OrderRepository interface {
 	Create(ctx context.Context, order *Order) (*Order, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*Order, error)
 	ListBySessionID(ctx context.Context, sessionID uuid.UUID) ([]*Order, error)
+	ListActiveOrders(ctx context.Context) ([]*Order, error)
 	UpdateStatus(ctx context.Context, id uuid.UUID, status OrderStatus) (*Order, error)
 }
 

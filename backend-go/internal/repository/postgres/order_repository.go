@@ -130,6 +130,43 @@ func (r *orderRepository) ListBySessionID(ctx context.Context, sessionID uuid.UU
 	return orders, nil
 }
 
+func (r *orderRepository) ListActiveOrders(ctx context.Context) ([]*domain.Order, error) {
+	rows, err := db.New(r.pool).ListActiveOrders(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	orders := []*domain.Order{}
+	for _, row := range rows {
+		itemsRows, err := db.New(r.pool).ListOrderItems(ctx, row.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		var items []domain.OrderItem
+		for _, itemRow := range itemsRows {
+			items = append(items, domain.OrderItem{
+				ID:         pgToUuid(itemRow.ID),
+				OrderID:    pgToUuid(itemRow.OrderID),
+				MenuItemID: pgToUuid(itemRow.MenuItemID),
+				Quantity:   int(itemRow.Quantity),
+				UnitPrice:  pgToDecimal(itemRow.UnitPrice),
+				Notes:      itemRow.Notes.String,
+			})
+		}
+
+		orders = append(orders, &domain.Order{
+			ID:              pgToUuid(row.ID),
+			DiningSessionID: pgToUuid(row.DiningSessionID),
+			Status:          domain.OrderStatus(row.Status),
+			TotalAmount:     pgToDecimal(row.TotalAmount),
+			CreatedAt:       row.CreatedAt.Time,
+			Items:           items,
+		})
+	}
+	return orders, nil
+}
+
 func (r *orderRepository) UpdateStatus(ctx context.Context, id uuid.UUID, status domain.OrderStatus) (*domain.Order, error) {
 	arg := db.UpdateOrderStatusParams{
 		ID:     uuidToPg(id),

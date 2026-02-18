@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/theikdi-sann/qr-restaurant-api/internal/domain"
+	"github.com/theikdi-sann/qr-restaurant-api/internal/repository/postgres/db"
 )
 
 const dbSource = "postgresql://postgres:postgres@127.0.0.1:54328/postgres"
@@ -61,7 +62,7 @@ func TestDiningSessionRepositoryIntegration(t *testing.T) {
 		// Prepare Session Domain Object
 		startTime := time.Now().Round(time.Microsecond) // Postgres resolution
 		expiry := startTime.Add(90 * time.Minute)
-		
+
 		session := &domain.DiningSession{
 			TableID:       tableID,
 			SessionTypeID: sessionTypeID,
@@ -153,5 +154,42 @@ func TestDiningSessionRepositoryIntegration(t *testing.T) {
 		assert.Nil(t, createdSession.ExpiresAt)
 
 		defer conn.Exec(ctx, "DELETE FROM dining_sessions WHERE id = $1", createdSession.ID)
+	})
+
+	t.Run("Menu Availability Lifecycle", func(t *testing.T) {
+		repo := NewMenuItemRepository(db.New(conn))
+
+		// 1. Create Category
+		catID := uuid.New()
+		_, err := conn.Exec(ctx, "INSERT INTO menu_categories (id, name, sort_order) VALUES ($1, $2, $3)", catID, "Test Cat", 1)
+		require.NoError(t, err)
+		defer conn.Exec(ctx, "DELETE FROM menu_categories WHERE id = $1", catID)
+
+		// 2. Create Item (Available)
+		itemID := uuid.New()
+		_, err = conn.Exec(ctx, "INSERT INTO menu_items (id, category_id, name, price, is_available) VALUES ($1, $2, $3, $4, $5)", itemID, catID, "Test Item", 10.0, true)
+		require.NoError(t, err)
+		defer conn.Exec(ctx, "DELETE FROM menu_items WHERE id = $1", itemID)
+
+		// 3. Verify ListByCategory (Should find it)
+		items, err := repo.ListByCategory(ctx, catID)
+		require.NoError(t, err)
+		assert.Len(t, items, 1)
+
+		// 4. Update to Unavailable
+		updated, err := repo.UpdateAvailability(ctx, itemID, false)
+		require.NoError(t, err)
+		assert.False(t, updated.IsAvailable)
+
+		// 5. Verify ListByCategory (Should NOT find it)
+		items, err = repo.ListByCategory(ctx, catID)
+		require.NoError(t, err)
+		assert.Len(t, items, 0)
+
+		// 6. Verify ListAllByCategory (Should find it)
+		itemsAll, err := repo.ListAllByCategory(ctx, catID)
+		require.NoError(t, err)
+		assert.Len(t, itemsAll, 1)
+		assert.False(t, itemsAll[0].IsAvailable)
 	})
 }

@@ -9,12 +9,12 @@
 
 ### 1. Work Breakdown Structure (WBS) - Phased Approach
 
-| Phase | Duration | Key Deliverables |
+| Phase | Status | Key Deliverables |
 | :--- | :--- | :--- |
-| **Phase 1: Foundation** | Weeks 1-2 | - VPS Setup & Docker Configuration (Supabase)<br>- Git Repo & CI/CD Setup<br>- Database Schema Design (Postgres)<br>- Go Backend "Hello World" |
-| **Phase 2: Core Development** | Weeks 3-5 | - **Customer Web:** Menu UI, Cart, QR Scanning<br>- **Staff App:** Login, Dashboard Shell<br>- **Backend:** Order Validation Logic, Realtime Websockets |
-| **Phase 3: Logic & Integration** | Weeks 6-7 | - **Buffet Logic:** Timer implementation<br>- **Billing:** Digital Receipt generation, Stripe Integration<br>- **Hardware:** Thermal Printer TCP Integration |
-| **Phase 4: Polish & Launch** | Week 8 | - **Testing:** End-to-End User Flow testing<br>- **Bug Fixes:** UI/UX refinements<br>- **Deployment:** Production VPS Live |
+| **Phase 1: Foundation (Backend)** | ✅ **Complete** | - VPS & Docker (Supabase/Postgres)<br>- Go Backend Clean Arch<br>- Session Management (Buffet Timers)<br>- Menu Management API |
+| **Phase 2: Core Logic & Security** | ✅ **Complete** | - Order Management (Validation, State Machine)<br>- **RBAC & Auth** (JWT Middleware, Secure API)<br>- Realtime Order Broadcast (Websockets)<br>- **Take Away Lifecycle** (Nullable Tables, Unlimited Duration) |
+| **Phase 3: Frontend Ecosystem** | 🔄 **In Progress** | - **Customer Web App:** Menu, Cart, QR Entry, I18n, Tests (Done)<br>- **Staff App (Tablet):**<br>  - KDS (Kitchen Display) (FR-13, FR-15)<br>  - Table Management & Notifications (FR-14)<br>- **Logic:** À La Carte Inactivity Monitor (FR-05) |
+| **Phase 4: Billing & Hardware** | 📅 **Next** | - **Billing:** Split Bill Logic (FR-19), Digital Receipts (FR-17)<br>- **Payment:** Take Away Payment Intent (Cash/Digital) (FR-07, FR-09)<br>- **Hardware:** TCP Thermal Printer Integration (FR-18)<br>- **Reporting:** Revenue Analytics |
 
 ### 2. Resource Allocation
 
@@ -33,8 +33,8 @@
 
 | Milestone ID | Description | Target Date |
 | :--- | :--- | :--- |
-| **M-01** | **Infrastructure Ready:** Supabase running on VPS, accessible via URL. | Week 2 End |
-| **M-02** | **"First Order":** A mock customer can place an order and it appears in the DB. | Week 4 End |
-| **M-03** | **Realtime Sync:** Kitchen tablet updates instantly when order is placed. | Week 5 End |
-| **M-04** | **Hardware Integ:** Receipt prints successfully on thermal printer. | Week 7 End |
-| **M-05** | **MVP Launch:** System deployed and ready for live customers. | Week 8 End |
+| **M-01** | **Backend Core:** API, DB, Auth, Realtime ready. | ✅ Done |
+| **M-02** | **Customer MVP:** QR Scan -> Order -> Kitchen Receive. | ✅ Done |
+| **M-03** | **Staff Operations:** KDS, Table Management, Take Away handling. | Week 5 End |
+| **M-04** | **Hardware/Billing:** Printer connected, Payments integrated. | Week 7 End |
+| **M-05** | **Enterprise Launch:** Stress tests, Analytics, Production Deploy. | Week 8 End |

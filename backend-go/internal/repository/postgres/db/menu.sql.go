@@ -95,6 +95,42 @@ func (q *Queries) GetMenuItem(ctx context.Context, id pgtype.UUID) (MenuItem, er
 	return i, err
 }
 
+const listAllMenuItemsByCategory = `-- name: ListAllMenuItemsByCategory :many
+SELECT id, category_id, name, description, price, image_url, is_available, created_at, updated_at FROM menu_items
+WHERE category_id = $1
+ORDER BY name ASC
+`
+
+func (q *Queries) ListAllMenuItemsByCategory(ctx context.Context, categoryID pgtype.UUID) ([]MenuItem, error) {
+	rows, err := q.db.Query(ctx, listAllMenuItemsByCategory, categoryID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []MenuItem
+	for rows.Next() {
+		var i MenuItem
+		if err := rows.Scan(
+			&i.ID,
+			&i.CategoryID,
+			&i.Name,
+			&i.Description,
+			&i.Price,
+			&i.ImageUrl,
+			&i.IsAvailable,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listMenuCategories = `-- name: ListMenuCategories :many
 SELECT id, name, sort_order, created_at FROM menu_categories
 ORDER BY sort_order ASC
@@ -159,4 +195,33 @@ func (q *Queries) ListMenuItemsByCategory(ctx context.Context, categoryID pgtype
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateMenuItemAvailability = `-- name: UpdateMenuItemAvailability :one
+UPDATE menu_items
+SET is_available = $2, updated_at = NOW()
+WHERE id = $1
+RETURNING id, category_id, name, description, price, image_url, is_available, created_at, updated_at
+`
+
+type UpdateMenuItemAvailabilityParams struct {
+	ID          pgtype.UUID `json:"id"`
+	IsAvailable bool        `json:"is_available"`
+}
+
+func (q *Queries) UpdateMenuItemAvailability(ctx context.Context, arg UpdateMenuItemAvailabilityParams) (MenuItem, error) {
+	row := q.db.QueryRow(ctx, updateMenuItemAvailability, arg.ID, arg.IsAvailable)
+	var i MenuItem
+	err := row.Scan(
+		&i.ID,
+		&i.CategoryID,
+		&i.Name,
+		&i.Description,
+		&i.Price,
+		&i.ImageUrl,
+		&i.IsAvailable,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }

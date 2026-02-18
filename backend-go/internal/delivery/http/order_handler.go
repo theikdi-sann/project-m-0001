@@ -107,6 +107,15 @@ func (h *OrderHandler) ListOrders(c *gin.Context) {
 	c.JSON(http.StatusOK, orders)
 }
 
+func (h *OrderHandler) ListActiveOrders(c *gin.Context) {
+	orders, err := h.usecase.ListActiveOrders(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, orders)
+}
+
 func (h *OrderHandler) UpdateStatus(c *gin.Context) {
 	idStr := c.Param("id")
 	orderID, err := uuid.Parse(idStr)
@@ -144,5 +153,6 @@ func (h *OrderHandler) UpdateStatus(c *gin.Context) {
 func (h *OrderHandler) RegisterRoutes(router gin.IRoutes) {
 	router.POST("/orders", h.CreateOrder)
 	router.GET("/orders", h.ListOrders)
+	router.GET("/orders/active", h.ListActiveOrders)
 	router.PATCH("/orders/:id/status", h.UpdateStatus)
 }

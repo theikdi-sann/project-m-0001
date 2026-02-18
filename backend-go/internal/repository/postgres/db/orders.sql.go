@@ -91,6 +91,39 @@ func (q *Queries) GetOrder(ctx context.Context, id pgtype.UUID) (Order, error) {
 	return i, err
 }
 
+const listActiveOrders = `-- name: ListActiveOrders :many
+SELECT id, dining_session_id, status, total_amount, created_at, updated_at FROM orders
+WHERE status IN ('pending', 'preparing', 'ready')
+ORDER BY created_at ASC
+`
+
+func (q *Queries) ListActiveOrders(ctx context.Context) ([]Order, error) {
+	rows, err := q.db.Query(ctx, listActiveOrders)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Order
+	for rows.Next() {
+		var i Order
+		if err := rows.Scan(
+			&i.ID,
+			&i.DiningSessionID,
+			&i.Status,
+			&i.TotalAmount,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listOrderItems = `-- name: ListOrderItems :many
 SELECT id, order_id, menu_item_id, quantity, unit_price, notes, created_at FROM order_items
 WHERE order_id = $1

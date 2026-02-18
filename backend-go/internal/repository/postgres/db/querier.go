@@ -23,12 +23,15 @@ type Querier interface {
 	GetOrder(ctx context.Context, id pgtype.UUID) (Order, error)
 	GetSessionType(ctx context.Context, id pgtype.UUID) (DiningSessionType, error)
 	ListActiveDiningSessions(ctx context.Context) ([]DiningSession, error)
+	ListActiveOrders(ctx context.Context) ([]Order, error)
+	ListAllMenuItemsByCategory(ctx context.Context, categoryID pgtype.UUID) ([]MenuItem, error)
 	ListExpiredSessions(ctx context.Context) ([]DiningSession, error)
 	ListMenuCategories(ctx context.Context) ([]MenuCategory, error)
 	ListMenuItemsByCategory(ctx context.Context, categoryID pgtype.UUID) ([]MenuItem, error)
 	ListOrderItems(ctx context.Context, orderID pgtype.UUID) ([]OrderItem, error)
 	ListOrdersBySession(ctx context.Context, diningSessionID pgtype.UUID) ([]Order, error)
 	UpdateDiningSessionStatus(ctx context.Context, arg UpdateDiningSessionStatusParams) (DiningSession, error)
+	UpdateMenuItemAvailability(ctx context.Context, arg UpdateMenuItemAvailabilityParams) (MenuItem, error)
 	UpdateOrderStatus(ctx context.Context, arg UpdateOrderStatusParams) (Order, error)
 	UpdateTableStatus(ctx context.Context, arg UpdateTableStatusParams) error
 }

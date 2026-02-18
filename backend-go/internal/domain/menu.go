@@ -25,5 +25,7 @@ type MenuCategory struct {
 type MenuItemRepository interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*MenuItem, error)
 	ListByCategory(ctx context.Context, categoryID uuid.UUID) ([]*MenuItem, error)
+	ListAllByCategory(ctx context.Context, categoryID uuid.UUID) ([]*MenuItem, error)
 	ListCategories(ctx context.Context) ([]*MenuCategory, error)
+	UpdateAvailability(ctx context.Context, id uuid.UUID, isAvailable bool) (*MenuItem, error)
 }

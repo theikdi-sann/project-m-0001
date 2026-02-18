@@ -20,3 +20,14 @@ ORDER BY name ASC;
 -- name: GetMenuItem :one
 SELECT * FROM menu_items
 WHERE id = $1 LIMIT 1;
+
+-- name: ListAllMenuItemsByCategory :many
+SELECT * FROM menu_items
+WHERE category_id = $1
+ORDER BY name ASC;
+
+-- name: UpdateMenuItemAvailability :one
+UPDATE menu_items
+SET is_available = $2, updated_at = NOW()
+WHERE id = $1
+RETURNING *;
